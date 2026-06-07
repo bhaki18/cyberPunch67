@@ -3,6 +3,9 @@ const { Server } = require("socket.io");
 
 const { connectDB, CreaPlayer } = require("../database/database");
 
+// PORT
+const PORT = process.env.PORT || 3000;
+
 // Server HTTP
 const server = http.createServer();
 
@@ -23,13 +26,13 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("Client connesso:", socket.id);
 
-  
+
 
   socket.on("disconnect", () => {
     console.log("Client disconnesso:", socket.id);
   });
 });
 
-server.listen(3000, () => {
-  console.log("Server Socket.IO attivo su 3000");
+server.listen(PORT, () => {
+  console.log("Server Socket.IO attivo su " + PORT);
 });
