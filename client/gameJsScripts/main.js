@@ -1,4 +1,4 @@
-const socket = io("http://localhost:3000", {
+const socket = io("https://cyberpunch67.onrender.com", {
     autoConnect: false // booleano che decide se il player si connette al server appena avvia il gioco
 });
 window.socket = socket;
