@@ -82,6 +82,7 @@ export default class LogInScene extends Phaser.Scene {
 
         if (this.tryLogin) {
             this.tryLogin = false;
+            this.shutdown();
 
             const dati = {
                 usernameInput: this.usernameInput.value,
@@ -141,6 +142,9 @@ export default class LogInScene extends Phaser.Scene {
 
         } catch (err) {
             console.error("Errore login:", err);
+            this.shutdown();
+        } finally {
+            this.shutdown();
         }
     }
 
