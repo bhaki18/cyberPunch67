@@ -1,8 +1,6 @@
 const socket = io("https://cyberpunch67.onrender.com", {
-    autoConnect: true, // booleano che decide se il player si connette al server appena avvia il gioco
-    auth: {
-        token: localStorage.getItem("token")
-    }
+    autoConnect: true // booleano che decide se il player si connette al server appena avvia il gioco
+
 });
 window.socket = socket;
 
@@ -10,6 +8,8 @@ import SystemScene from "./SystemScene.js";
 import BootScene from "./BootScene.js";
 import PreloadScene from "./PreloadScene.js";
 import MainMenuScene from "./MainMenuScene.js";
+import LogInScene from "./LogInScene.js";
+import HubScene from "./HubScene.js";
 
 const config = {
     type: Phaser.AUTO,
@@ -35,7 +35,9 @@ const config = {
         BootScene,
         SystemScene,
         PreloadScene,
-        MainMenuScene]
+        MainMenuScene,
+        LogInScene,
+        HubScene]
 };
 
 const game = new Phaser.Game(config);

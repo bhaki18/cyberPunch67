@@ -1,31 +1,40 @@
+const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { connectDB } = require("../database/database");
+const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const express = require("express");
-const { LoginPlayer, CreaPlayer } = require("../database/database");
 
-const app = express();
-app.use(express.json());
+const { connectDB, LoginPlayer, CreaPlayer } = require("../database/database");
 
 const PORT = process.env.PORT || 3000;
 
+const app = express();
 
+// ---------------- MIDDLEWARE
+app.use(express.json());
 
-// Socket.IO
+app.use(cors({
+  origin: [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+  ]
+}));
+
+// ---------------- HTTP SERVER
+const server = http.createServer(app);
+
+// ---------------- SOCKET.IO
 const io = new Server(server, {
   cors: {
     origin: [
       "http://127.0.0.1:5500",
-      "http://localhost:5500",
-      "https://cyberpunch67.onrender.com"
+      "http://localhost:5500"
     ],
     methods: ["GET", "POST"]
   }
 });
 
 
-// LOGIN
 app.post("/auth/login", async (req, res) => {
   try {
     const player = await LoginPlayer(
@@ -49,15 +58,10 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-// SING UP
 
 app.post("/auth/signup", async (req, res) => {
   try {
-    const player = await CreaPlayer(
-      req.body.username,
-      req.body.password
-    );
-
+    await CreaPlayer(req.body.username, req.body.password);
     res.json({ success: true });
 
   } catch (err) {
@@ -65,13 +69,12 @@ app.post("/auth/signup", async (req, res) => {
   }
 });
 
+
 io.use((socket, next) => {
   try {
     const token = socket.handshake.auth.token;
 
-    if (!token) {
-      return next(new Error("No token"));
-    }
+    if (!token) return next(new Error("No token"));
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -84,16 +87,12 @@ io.use((socket, next) => {
   }
 });
 
-// DB connect
-(async () => {
-  await connectDB();
-})();
+
 
 io.on("connection", (socket) => {
   console.log("Player loggato:", socket.user.username);
 
   socket.emit("welcome", {
-    message: "Benvenuto",
     user: socket.user
   });
 
@@ -102,6 +101,7 @@ io.on("connection", (socket) => {
   });
 });
 
-const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log("HTTP + Socket server attivo su " + PORT);
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("Server attivo su " + PORT);
 });

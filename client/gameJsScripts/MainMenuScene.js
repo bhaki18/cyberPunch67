@@ -98,6 +98,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
+            this.scene.launch("LogInScene");
 
         });
 
