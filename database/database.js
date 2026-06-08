@@ -13,11 +13,20 @@ const playerSchema = new mongoose.Schema({
 const Player = mongoose.model("Player", playerSchema);
 
 const connectDB = async () => {
-  await mongoose.connect(process.env.MONGODB_URI, {
-    dbName: "phaserGameJamDB"
-  });
+  try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI non definita");
+    }
 
-  console.log("MongoDB connesso");
+    await mongoose.connect(process.env.MONGODB_URI, {
+      dbName: "phaserGameJamDB"
+    });
+
+    console.log("MongoDB connesso");
+
+  } catch (err) {
+    console.error("MongoDB error:", err);
+  }
 };
 
 const CreaPlayer = async (username, password) => {

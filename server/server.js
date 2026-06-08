@@ -34,6 +34,16 @@ const io = new Server(server, {
   }
 });
 
+// CONNESSIONE AL DATABASE
+
+(async () => {
+  await connectDB();
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log("Server avviato");
+  });
+
+})();
 
 app.post("/auth/login", async (req, res) => {
   try {

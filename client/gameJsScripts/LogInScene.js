@@ -128,6 +128,7 @@ export default class LogInScene extends Phaser.Scene {
                     token: data.token
                 }
             });
+            window.socket = this.socket;
 
             this.socket.on("connect", () => {
                 console.log("Socket connesso:", this.socket.id);
@@ -149,3 +150,4 @@ export default class LogInScene extends Phaser.Scene {
         if (this.passwordInput) this.passwordInput.remove();
     }
 }
+
