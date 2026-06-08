@@ -11,6 +11,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.arenaStartX = 2800; // posizione dove inizia l’arena
         this.cameraCanMove = false;
         this.personaggioPuoApparire = false;
+        this.bottoneAttuale = 0;
     }
 
     create() {
@@ -67,13 +68,13 @@ export default class MainMenuScene extends Phaser.Scene {
 
         setTimeout(() => {
             this.cameraCanMove = true;
-        }, 300);
+        }, 200);
 
 
 
         // BOTTONI  
-        const xBtn = 2760;
-        const yBtn = -200;
+        const xBtn = 3600;
+        const yBtn = 200;
 
         // PLAY ONLINE BTN
         this.bottonePlayOnline = this.add.image(xBtn, yBtn, "playOnlineBtn")
@@ -83,13 +84,13 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottonePlayOnline.on("pointerover", () => {
             this.bottonePlayOnline.setFrame(1);
             this.bottonePlayOnline.setScale(2.2);
-            this.bottonePlayOnline.x = xBtn + 20;
+            this.bottonePlayOnline.x += 20;
 
         });
         this.bottonePlayOnline.on("pointerout", () => {
             this.bottonePlayOnline.setFrame(0);
             this.bottonePlayOnline.setScale(2);
-            this.bottonePlayOnline.x = xBtn;
+            this.bottonePlayOnline.x -= 20;
 
         });
         this.bottonePlayOnline.on("pointerdown", () => {
@@ -109,13 +110,13 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottonePlayOffline.on("pointerover", () => {
             this.bottonePlayOffline.setFrame(1);
             this.bottonePlayOffline.setScale(2.2);
-            this.bottonePlayOffline.x = xBtn + 20;
+            this.bottonePlayOffline.x += 20;
 
         });
         this.bottonePlayOffline.on("pointerout", () => {
             this.bottonePlayOffline.setFrame(0);
             this.bottonePlayOffline.setScale(2);
-            this.bottonePlayOffline.x = xBtn;
+            this.bottonePlayOffline.x -= 20;
 
         });
         this.bottonePlayOffline.on("pointerdown", () => {
@@ -136,13 +137,13 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottoneInventory.on("pointerover", () => {
             this.bottoneInventory.setFrame(1);
             this.bottoneInventory.setScale(2.2);
-            this.bottoneInventory.x = xBtn + 20;
+            this.bottoneInventory.x += 20;
 
         });
         this.bottoneInventory.on("pointerout", () => {
             this.bottoneInventory.setFrame(0);
             this.bottoneInventory.setScale(2);
-            this.bottoneInventory.x = xBtn;
+            this.bottoneInventory.x -= 20;
 
         });
         this.bottoneInventory.on("pointerdown", () => {
@@ -163,13 +164,13 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottoneInfo.on("pointerover", () => {
             this.bottoneInfo.setFrame(1);
             this.bottoneInfo.setScale(2.2);
-            this.bottoneInfo.x = xBtn + 20;
+            this.bottoneInfo.x += 20;
 
         });
         this.bottoneInfo.on("pointerout", () => {
             this.bottoneInfo.setFrame(0);
             this.bottoneInfo.setScale(2);
-            this.bottoneInfo.x = xBtn;
+            this.bottoneInfo.x -= 20;
 
         });
         this.bottoneInfo.on("pointerdown", () => {
@@ -182,6 +183,28 @@ export default class MainMenuScene extends Phaser.Scene {
 
 
         this.arrayDiBottoni = [this.bottonePlayOnline, this.bottonePlayOffline, this.bottoneInventory, this.bottoneInfo];
+
+        for (let i = 0; i < this.arrayDiBottoni.length; i++) {
+            this.arrayDiBottoni[i].y = yBtn + (i * 90)
+        }
+
+        // PERSONAGGIO CHE DEVE CADERE 
+        this.dominantRed = this.add.image(this.arenaStartX + 200, -200, "dominantRedFalling")
+            .setScale(1)
+            .setDepth(3)
+            .setOrigin(0.5);
+
+        // OMBRA DEL PERSONAGGIO CHE CADE
+
+        this.dominantRedShadow = this.add.image(
+            this.arenaStartX + 200,
+            -200,
+            "dominantRedFalling"
+        )
+            .setScale(2)
+            .setDepth(2.5)
+            .setAlpha(0.35)
+            .setTint(0x000000);
 
 
 
@@ -265,40 +288,46 @@ export default class MainMenuScene extends Phaser.Scene {
 
 
     arenaCheOscilla() {
-        this.time.addEvent({
-            loop: true,
-            delay: 16,
-            callback: () => {
-                const t = this.time.now * 0.002;
+        const t = this.time.now * 0.002;
 
-
-                this.arrayDiLayer.forEach(a => {
-                    a.y = Math.sin(t) * 5;
-                    a.y += 100;
-                })
-
-            }
+        this.arrayDiLayer.forEach(a => {
+            a.y = 100 + Math.sin(t) * 5;
         });
+
+        if (this.personaggioPuoOscillare) {
+            this.dominantRed.y = 300 + Math.sin(t) * 5;
+            this.dominantRedShadow.y = 300 + Math.sin(t) * 5;
+        }
     }
 
     bottoniCheAppaiono() {
 
         if (this.btnsCanFall) {
-            for (let i = 0; i < this.arrayDiBottoni.length; i++) {
-                const a = this.arrayDiBottoni[i];
 
-                a.setDepth(10);
-                if (a.y < 200 + 90 * i) {
-                    a.y += 10;
-                }
 
+
+
+            const a = this.arrayDiBottoni[this.bottoneAttuale];
+
+            if (a.x > 2760) {
+                a.x -= 20;
             }
 
-            if (this.arrayDiBottoni[this.arrayDiBottoni.length - 1].y >= 200 + 90 * this.arrayDiBottoni.length) {
+            if (a.x < 2760) {
+                a.x = 2760;
+            }
+            if (a.x === 2760) {
+                this.cameras.main.shake(200, 0.008);
+                this.bottoneAttuale++;
+            }
+
+
+            if (this.arrayDiBottoni[this.arrayDiBottoni.length - 1].x == 2760 ||
+                this.arrayDiBottoni[this.arrayDiBottoni.length - 1].x === 2740) {
                 this.btnsCanFall = false;
                 setTimeout(() => {
                     this.personaggioPuoApparire = true;
-                }, 200)
+                }, 200);
 
             }
         }
@@ -306,7 +335,41 @@ export default class MainMenuScene extends Phaser.Scene {
 
     personaggioCheAppare() {
         if (this.personaggioPuoApparire) {
+            const groundY = 400;
+            if (this.dominantRed.y < 300) {
+                this.dominantRed.y += 5;
 
+
+
+                this.dominantRedShadow.x = this.dominantRed.x + 10;
+                this.dominantRedShadow.y = 300; // “terra” fissa
+
+
+                const t = Phaser.Math.Clamp(
+                    (this.dominantRed.y / groundY),
+                    0,
+                    1
+                );
+
+                // più vicino al suolo → ombra più piccola e più scura
+                this.dominantRedShadow.setScale(2 - t * 1.4);
+                this.dominantRedShadow.setAlpha(0.01 + t * 0.3);
+
+
+
+
+
+            } else {
+                this.personaggioPuoApparire = false;
+                this.personaggioPuoOscillare = true;
+                this.dominantRed.setTexture("dominantRedLanding");
+                this.dominantRedShadow.setTexture("dominantRedLanding");
+                this.cameras.main.shake(400, 0.008);
+                setTimeout(() => {
+                    this.dominantRed.setTexture("dominantRedStanding");
+                    this.dominantRedShadow.setTexture("dominantRedStanding");
+                }, 400)
+            }
         }
     }
 }

@@ -1,5 +1,8 @@
 const socket = io("https://cyberpunch67.onrender.com", {
-    autoConnect: false // booleano che decide se il player si connette al server appena avvia il gioco
+    autoConnect: true, // booleano che decide se il player si connette al server appena avvia il gioco
+    auth: {
+        token: localStorage.getItem("token")
+    }
 });
 window.socket = socket;
 

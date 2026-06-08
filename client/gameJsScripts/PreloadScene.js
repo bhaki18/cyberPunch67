@@ -302,6 +302,17 @@ export default class PreloadScene extends Phaser.Scene {
             }
         );
 
+        // personaggio che cade 
+
+        // lui che sta in piedi 
+        this.load.image("dominantRedStanding", "../assets/MainMenuScene/dominantRedStanding.png");
+
+        // lui che atterra
+        this.load.image("dominantRedLanding", "../assets/MainMenuScene/dominantRedLanding.png");
+
+        // lui che sta cadendo
+        this.load.image("dominantRedFalling", "../assets/MainMenuScene/dominantRedFalling.png");
+
 
 
 

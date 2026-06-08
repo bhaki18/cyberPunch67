@@ -1,57 +1,51 @@
 const mongoose = require("mongoose");
-const path = require("path");
-const dotenv = require("dotenv");
+const bcrypt = require("bcrypt");
 
-// Carica .env
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-
-/**
- * Schema Player
- */
 const playerSchema = new mongoose.Schema({
-  username: { type: String, required: true },
-  permessi: { type: String, default: "user" },
-  id: { type: String, required: true, unique: true },
-  level: { type: Number, default: 1 },
-  exp: { type: Number, default: 0 },
-  
-});
+  username: { type: String, required: true, unique: true },
+  passwordHash: { type: String, required: true },
 
-/**
- * Model Player
- */
+  permessi: { type: String, default: "user" },
+  level: { type: Number, default: 1 },
+  exp: { type: Number, default: 0 }
+}, { timestamps: true });
+
 const Player = mongoose.model("Player", playerSchema);
 
-/**
- * Connessione DB
- */
 const connectDB = async () => {
-  try {
-    if (!process.env.MONGODB_URI) {
-      throw new Error("MONGODB_URI non definita nel file .env");
-    }
+  await mongoose.connect(process.env.MONGODB_URI, {
+    dbName: "phaserGameJamDB"
+  });
 
-    await mongoose.connect(process.env.MONGODB_URI, { dbName: "phaserGameJamDB" });
-    console.log("MongoDB connesso");
-  } catch (err) {
-    console.error("Errore connessione MongoDB:", err);
-  }
+  console.log("MongoDB connesso");
 };
 
-/**
- * Crea Player
- */
-const CreaPlayer = async (playerData) => {
-  const player = await Player.create({
-    username: playerData.username,
-    permessi: playerData.permessi,
-    id: String(playerData.id),
-    level: playerData.level,
-    exp: playerData.exp,
-    
+const CreaPlayer = async (username, password) => {
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  return await Player.create({
+    username,
+    passwordHash,
+    permessi: "user",
+    level: 1,
+    exp: 0
   });
+};
+
+const LoginPlayer = async (username, password) => {
+  const player = await Player.findOne({ username });
+
+  if (!player) throw new Error("User non trovato");
+
+  const ok = await bcrypt.compare(password, player.passwordHash);
+
+  if (!ok) throw new Error("Password errata");
 
   return player;
 };
 
-module.exports = { connectDB, CreaPlayer };
+module.exports = {
+  connectDB,
+  CreaPlayer,
+  LoginPlayer
+};
