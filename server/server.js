@@ -34,16 +34,6 @@ const io = new Server(server, {
   }
 });
 
-// CONNESSIONE AL DATABASE
-
-(async () => {
-  await connectDB();
-
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log("Server avviato");
-  });
-
-})();
 
 app.post("/auth/login", async (req, res) => {
   try {
@@ -67,7 +57,6 @@ app.post("/auth/login", async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-
 
 app.post("/auth/signup", async (req, res) => {
   try {
@@ -98,7 +87,6 @@ io.use((socket, next) => {
 });
 
 
-
 io.on("connection", (socket) => {
   console.log("Player loggato:", socket.user.username);
 
@@ -112,6 +100,11 @@ io.on("connection", (socket) => {
 });
 
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("Server attivo su " + PORT);
-});
+(async () => {
+  await connectDB();
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log("Server attivo su " + PORT);
+  });
+
+})();
