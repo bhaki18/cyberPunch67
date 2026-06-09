@@ -98,7 +98,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
-            this.scene.launch("SignUpScene");
+            this.scene.launch("LogInScene");
 
         });
 
@@ -222,6 +222,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.animationInizialeMainMenu();
         this.arenaCheOscilla();
         this.bottoniCheAppaiono();
+        this.BugsHandler();
         this.personaggioCheAppare();
 
 
@@ -372,5 +373,13 @@ export default class MainMenuScene extends Phaser.Scene {
                 }, 400)
             }
         }
+    }
+
+    BugsHandler() {
+        this.arrayDiBottoni.forEach(a => {
+            if (a.x === 2740) {
+                a.x = 2760;
+            }
+        })
     }
 }

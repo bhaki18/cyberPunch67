@@ -1,6 +1,5 @@
 
 
-
 import SystemScene from "./SystemScene.js";
 import BootScene from "./BootScene.js";
 import PreloadScene from "./PreloadScene.js";
