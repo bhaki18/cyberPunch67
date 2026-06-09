@@ -75,26 +75,52 @@ export default class MainMenuScene extends Phaser.Scene {
         // BOTTONI  
         const xBtn = 3600;
         const yBtn = 200;
+        const XbtnFinale = 2760;
 
         // PLAY ONLINE BTN
         this.bottonePlayOnline = this.add.image(xBtn, yBtn, "playOnlineBtn")
             .setInteractive({ pixelPerfect: true })
             .setScale(2)
             .setDepth(2);
+
+
         this.bottonePlayOnline.on("pointerover", () => {
-            this.bottonePlayOnline.setFrame(1);
-            this.bottonePlayOnline.setScale(2.2);
-            this.bottonePlayOnline.x += 20;
+
+            this.tweens.add({
+                targets: this.bottonePlayOnline,
+                scale: 2.25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
+
+            this.tweens.add({
+                targets: this.bottonePlayOnline,
+                x: XbtnFinale + 25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottonePlayOnline.on("pointerout", () => {
             this.bottonePlayOnline.setFrame(0);
-            this.bottonePlayOnline.setScale(2);
-            this.bottonePlayOnline.x -= 20;
+            this.tweens.add({
+                targets: this.bottonePlayOnline,
+                scale: 2,
+                x: XbtnFinale,
+                duration: 180,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottonePlayOnline.on("pointerdown", () => {
             this.bottonePlayOnline.setFrame(2);
+
+            this.tweens.add({
+                targets: this.bottonePlayOnline,
+                angle: -2,
+                duration: 50,
+                yoyo: true
+            });
         });
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
@@ -108,16 +134,33 @@ export default class MainMenuScene extends Phaser.Scene {
             .setScale(2)
             .setDepth(2);
 
+
+
         this.bottonePlayOffline.on("pointerover", () => {
-            this.bottonePlayOffline.setFrame(1);
-            this.bottonePlayOffline.setScale(2.2);
-            this.bottonePlayOffline.x += 20;
+            this.tweens.add({
+                targets: this.bottonePlayOffline,
+                scale: 2.25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
+
+            this.tweens.add({
+                targets: this.bottonePlayOffline,
+                x: XbtnFinale + 25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottonePlayOffline.on("pointerout", () => {
             this.bottonePlayOffline.setFrame(0);
-            this.bottonePlayOffline.setScale(2);
-            this.bottonePlayOffline.x -= 20;
+            this.tweens.add({
+                targets: this.bottonePlayOffline,
+                scale: 2,
+                x: XbtnFinale,
+                duration: 180,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottonePlayOffline.on("pointerdown", () => {
@@ -135,16 +178,33 @@ export default class MainMenuScene extends Phaser.Scene {
             .setScale(2)
             .setDepth(2);
 
+
+
         this.bottoneInventory.on("pointerover", () => {
-            this.bottoneInventory.setFrame(1);
-            this.bottoneInventory.setScale(2.2);
-            this.bottoneInventory.x += 20;
+            this.tweens.add({
+                targets: this.bottoneInventory,
+                scale: 2.25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
+
+            this.tweens.add({
+                targets: this.bottoneInventory,
+                x: XbtnFinale + 25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottoneInventory.on("pointerout", () => {
             this.bottoneInventory.setFrame(0);
-            this.bottoneInventory.setScale(2);
-            this.bottoneInventory.x -= 20;
+            this.tweens.add({
+                targets: this.bottoneInventory,
+                scale: 2,
+                x: XbtnFinale,
+                duration: 180,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottoneInventory.on("pointerdown", () => {
@@ -162,16 +222,34 @@ export default class MainMenuScene extends Phaser.Scene {
             .setScale(2)
             .setDepth(2);
 
+
+
+
         this.bottoneInfo.on("pointerover", () => {
-            this.bottoneInfo.setFrame(1);
-            this.bottoneInfo.setScale(2.2);
-            this.bottoneInfo.x += 20;
+            this.tweens.add({
+                targets: this.bottoneInfo,
+                scale: 2.25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
+
+            this.tweens.add({
+                targets: this.bottoneInfo,
+                x: XbtnFinale + 25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottoneInfo.on("pointerout", () => {
             this.bottoneInfo.setFrame(0);
-            this.bottoneInfo.setScale(2);
-            this.bottoneInfo.x -= 20;
+            this.tweens.add({
+                targets: this.bottoneInfo,
+                scale: 2,
+                x: XbtnFinale,
+                duration: 180,
+                ease: "Sine.easeOut"
+            });
 
         });
         this.bottoneInfo.on("pointerdown", () => {
@@ -189,15 +267,53 @@ export default class MainMenuScene extends Phaser.Scene {
             this.arrayDiBottoni[i].y = yBtn + (i * 90)
         }
 
+        this.tweens.add({
+            targets: this.bottonePlayOnline,
+            y: this.bottonePlayOnline.y + 5,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.inOut"
+        });
+
+        this.tweens.add({
+            targets: this.bottonePlayOffline,
+            y: this.bottonePlayOffline.y + 5,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.inOut"
+        });
+
+        this.tweens.add({
+            targets: this.bottoneInventory,
+            y: this.bottoneInventory.y + 5,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.inOut"
+        });
+
+        this.tweens.add({
+            targets: this.bottoneInfo,
+            y: this.bottoneInfo.y + 5,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.inOut"
+        });
+
+
+
         // PERSONAGGIO CHE DEVE CADERE 
-        this.dominantRed = this.add.image(this.arenaStartX + 200, -200, "dominantRedFalling")
+        this.dominantRed = this.add.sprite(this.arenaStartX + 200, -200, "dominantRedFalling")
             .setScale(1)
             .setDepth(3)
             .setOrigin(0.5);
 
         // OMBRA DEL PERSONAGGIO CHE CADE
 
-        this.dominantRedShadow = this.add.image(
+        this.dominantRedShadow = this.add.sprite(
             this.arenaStartX + 200,
             -200,
             "dominantRedFalling"
@@ -224,7 +340,8 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottoniCheAppaiono();
         this.BugsHandler();
         this.personaggioCheAppare();
-
+        this.DominantRedCheRespira();
+        this.DominantRedCheAspetta();
 
 
     }
@@ -327,6 +444,10 @@ export default class MainMenuScene extends Phaser.Scene {
             if (this.arrayDiBottoni[this.arrayDiBottoni.length - 1].x == 2760 ||
                 this.arrayDiBottoni[this.arrayDiBottoni.length - 1].x === 2740) {
                 this.btnsCanFall = false;
+
+
+
+
                 setTimeout(() => {
                     this.personaggioPuoApparire = true;
                 }, 200);
@@ -370,6 +491,7 @@ export default class MainMenuScene extends Phaser.Scene {
                 setTimeout(() => {
                     this.dominantRed.setTexture("dominantRedStanding");
                     this.dominantRedShadow.setTexture("dominantRedStanding");
+                    this.dominantRedPuoRespirare = true;
                 }, 400)
             }
         }
@@ -381,5 +503,28 @@ export default class MainMenuScene extends Phaser.Scene {
                 a.x = 2760;
             }
         })
+    }
+
+    DominantRedCheRespira() {
+        if (this.dominantRedPuoRespirare) {
+            this.dominantRed.play("dominantRedBreathing");
+            this.dominantRedShadow.play("dominantRedBreathing");
+            this.dominantRedPuoRespirare = false;
+            this.dominantRedStaAspettando = true;
+        }
+    }
+
+    DominantRedCheAspetta() {
+        if (this.dominantRedStaAspettando) {
+            setInterval(() => {
+                this.dominantRed.play("dominantRedWaitingR");
+                this.dominantRedShadow.play("dominantRedWaitingR");
+                setTimeout(() => {
+                    this.dominantRed.play("dominantRedBreathing");
+                    this.dominantRedShadow.play("dominantRedBreathing");
+                }, 3800);
+            }, 10000);
+            this.dominantRedStaAspettando = false;
+        }
     }
 }

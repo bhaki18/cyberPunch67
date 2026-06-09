@@ -186,6 +186,8 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.backgroundPreloadingScene = bg;
 
+        this.createAnimationMainMenu();
+
 
 
     }
@@ -302,7 +304,15 @@ export default class PreloadScene extends Phaser.Scene {
             }
         );
 
-        // personaggio che cade 
+        // LOG IN BTN
+
+        this.load.spritesheet("logInBtn", "../assets/MainMenuScene/logInButtonSpriteSheet.png", {
+            frameWidth: 64,
+            frameHeight: 64
+        })
+
+
+        // DOMINANT RED
 
         // lui che sta in piedi 
         this.load.image("dominantRedStanding", "../assets/MainMenuScene/dominantRedStanding.png");
@@ -313,11 +323,65 @@ export default class PreloadScene extends Phaser.Scene {
         // lui che sta cadendo
         this.load.image("dominantRedFalling", "../assets/MainMenuScene/dominantRedFalling.png");
 
+        // lui che calcia a destra in alto
+        this.load.image("dominantRedHighKickingR", "../assets/MainMenuScene/dominantRedHighKickingR.png");
+
+        // lui che calcia a sinistra in alto
+        this.load.image("dominantRedHighKickingL", "../assets/MainMenuScene/dominantRedHighKickingL.png");
+
+        // lui che tira un pugno alto a destra
+        this.load.image("dominantRedHighPunchingR", "../assets/MainMenuScene/dominantRedHighPunchingR.png");
+
+        // lui che tira un pugno alto a sinistra
+        this.load.image("dominantRedHighPunchingL", "../assets/MainMenuScene/dominantRedHighPunchingL.png");
+
+        // lui che ispira
+        this.load.image("dominantRedIspira", "../assets/MainMenuScene/dominantRedIspira.png");
+
+        // lui che espira
+        this.load.image("dominantRedEspira", "../assets/MainMenuScene/dominantRedEspira.png");
+
+
+
+
+
+
+    }
+
+
+    createAnimationMainMenu() {
+
+
+        this.anims.create({
+            key: "dominantRedBreathing",
+            frames: [
+                { key: "dominantRedIspira" },
+                { key: "dominantRedStanding" },
+                { key: "dominantRedEspira" }
+            ],
+            frameRate: 1.5,
+            repeat: -1
+        });
+
+
+        this.anims.create({
+            key: "dominantRedWaitingR",
+            frames: [
+                { key: "dominantRedHighKickingR" },
+                { key: "dominantRedStanding" },
+                { key: "dominantRedHighPunchingR" },
+                { key: "dominantRedStanding" }
+            ],
+            frameRate: 2,
+            repeat: -1
+        });
 
 
 
     }
 }
+
+
 
 
 
