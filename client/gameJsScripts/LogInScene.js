@@ -146,6 +146,7 @@ export default class LogInScene extends Phaser.Scene {
 
             // ---------------- SALVA TOKEN
             localStorage.setItem("token", data.token);
+            localStorage.setItem("playerLogged", true);
 
             // ---------------- SOCKET CONNECT
             this.socket = io("https://cyberpunch67.onrender.com", {

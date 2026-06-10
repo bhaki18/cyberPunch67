@@ -124,6 +124,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
+            console.log(window.player);
 
         });
 
@@ -397,6 +398,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.personaggioCheAppare();
         this.DominantRedCheRespira();
         this.DominantRedCheAspetta();
+        this.eliminaBottoneDelLogIn();
 
 
     }
@@ -611,6 +613,12 @@ export default class MainMenuScene extends Phaser.Scene {
                 }, 3800);
             }, 10000);
             this.dominantRedStaAspettando = false;
+        }
+    }
+
+    eliminaBottoneDelLogIn() {
+        if (localStorage.getItem("playerLogged") == true && this.logInBtn) {
+            this.logInBtn.destroy();
         }
     }
 }
