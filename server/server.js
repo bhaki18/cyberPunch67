@@ -4,14 +4,13 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 
-const { connectDB, LoginPlayer, CreaPlayer } = require("../database/database");
+const { connectDB, LoginPlayer, CreaPlayer, GetPlayerById } = require("../database/database");
 
 const PORT = process.env.PORT || 3000;
 
 const app = express();
 
 
-let Player;
 
 
 // ---------------- MIDDLEWARE
@@ -45,8 +44,7 @@ app.post("/auth/login", async (req, res) => {
       req.body.username,
       req.body.password
     );
-    Player = user;
-    socket.emit("playerLoggato", (player));
+
 
     const token = jwt.sign(
       {
@@ -76,15 +74,18 @@ app.post("/auth/signup", async (req, res) => {
 });
 
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   try {
-    const token = socket.handshake.auth.token;
 
+    const token = socket.handshake.auth.token;
     if (!token) return next(new Error("No token"));
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    const player = await GetPlayerById(decoded.userId);
+
     socket.user = decoded;
+    socket.player = player;
 
     next();
 
@@ -95,17 +96,15 @@ io.use((socket, next) => {
 
 
 io.on("connection", (socket) => {
+
   console.log("Player loggato:", socket.user.username);
 
-  socket.emit("welcome", {
-    user: socket.user
-  });
-
-
+  socket.emit("playerLoggato", socket.player);
 
   socket.on("disconnect", () => {
     console.log("Logout:", socket.user.username);
   });
+
 });
 
 

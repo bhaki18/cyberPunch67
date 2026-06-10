@@ -53,8 +53,13 @@ const LoginPlayer = async (username, password) => {
   return player;
 };
 
+async function GetPlayerById(id) {
+  return await Player.findById(id);
+}
+
 module.exports = {
   connectDB,
   CreaPlayer,
-  LoginPlayer
+  LoginPlayer,
+  GetPlayerById
 };
