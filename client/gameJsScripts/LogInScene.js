@@ -3,6 +3,7 @@ export default class LogInScene extends Phaser.Scene {
         super("LogInScene");
 
         this.tryLogin = false;
+        this.isLoggingIn = false;
     }
 
     create() {
@@ -106,7 +107,6 @@ export default class LogInScene extends Phaser.Scene {
 
         if (this.tryLogin) {
             this.tryLogin = false;
-            this.shutdown();
 
             const dati = {
                 usernameInput: this.usernameInput.value,
@@ -117,6 +117,7 @@ export default class LogInScene extends Phaser.Scene {
                 console.log("Missing fields");
                 return;
             }
+
 
             this.connettiAlServer(dati);
         }
@@ -140,13 +141,13 @@ export default class LogInScene extends Phaser.Scene {
 
             if (!data.token) {
                 console.log("Login fallito:", data);
-                this.shutdown();
+                this.isLoggingIn = false;
                 return;
             }
 
             // ---------------- SALVA TOKEN
             localStorage.setItem("token", data.token);
-            localStorage.setItem("playerLogged", true);
+            localStorage.setItem("playerLogged", "true");
 
             // ---------------- SOCKET CONNECT
             this.socket = io("https://cyberpunch67.onrender.com", {
@@ -174,6 +175,7 @@ export default class LogInScene extends Phaser.Scene {
         } catch (err) {
             console.error("Errore login:", err);
             this.shutdown();
+            localStorage.setItem("playerLogged", "false");
         } finally {
             this.shutdown();
         }

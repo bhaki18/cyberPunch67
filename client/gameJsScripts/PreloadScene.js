@@ -341,6 +341,8 @@ export default class PreloadScene extends Phaser.Scene {
         // lui che espira
         this.load.image("dominantRedEspira", "../assets/MainMenuScene/dominantRedEspira.png");
 
+        // barra del giocatore
+        this.load.image("barraGiocatore", "../assets/MainMenuScene/barraGiocatore.png");
 
 
 
