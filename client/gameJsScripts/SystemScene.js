@@ -6,6 +6,8 @@ export default class SystemScene extends Phaser.Scene {
 
     create() {
 
+        localStorage.setItem("playerLogged", "false");
+        window.player = { username: null };
 
         // PER LO SCHERMO INTERO
         const f5 = this.input.keyboard.addKey(

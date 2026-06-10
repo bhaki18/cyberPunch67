@@ -4,6 +4,7 @@ export default class SignUpScene extends Phaser.Scene {
         super("SignUpScene");
 
         this.trySignup = false;
+        this.isSigningUp = false;
     }
 
     create() {
@@ -121,10 +122,10 @@ export default class SignUpScene extends Phaser.Scene {
                 return;
             }
 
+            if (this.isSigningUp) return;
+
+            this.isSigningUp = true;
             this.sendSignup(dati);
-            this.shutdown();
-            this.scene.stop();
-            this.scene.start("LogInScene");
         }
     }
 
@@ -143,16 +144,19 @@ export default class SignUpScene extends Phaser.Scene {
 
             if (data.error) {
                 console.log("Signup error:", data.error);
+                this.isSigningUp = false;
                 return;
             }
 
             console.log("Signup ok");
 
-            // torna login o menu
-            this.scene.start("LogInScene");
+            this.shutdown();
+            this.scene.stop();
+            this.scene.launch("LogInScene");
 
         } catch (err) {
             console.error("Errore signup:", err);
+            this.isSigningUp = false;
         }
     }
 

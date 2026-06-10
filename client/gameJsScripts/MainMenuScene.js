@@ -124,7 +124,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
-            console.log(window.player);
+            console.table(window.player);
 
         });
 
@@ -381,6 +381,14 @@ export default class MainMenuScene extends Phaser.Scene {
 
 
 
+        // Barra del giocatore
+
+        const XInizialeBarraDelGiocatore = 3500;
+        const YInizialeBarraDelGiocatore = 550;
+
+        this.barraGiocatore = this.add.sprite(XInizialeBarraDelGiocatore, YInizialeBarraDelGiocatore, "barraGiocatore")
+            .setAlpha(0).setScale(2);
+
 
 
 
@@ -399,6 +407,8 @@ export default class MainMenuScene extends Phaser.Scene {
         this.DominantRedCheRespira();
         this.DominantRedCheAspetta();
         this.eliminaBottoneDelLogIn();
+        this.faiApparireBarraGiocatore();
+        this.aggiornaNomeUtentePostLogIn();
 
 
     }
@@ -538,6 +548,7 @@ export default class MainMenuScene extends Phaser.Scene {
 
                 setTimeout(() => {
                     this.personaggioPuoApparire = true;
+                    this.barraGiocatorePuoApparire = true;
                 }, 200);
 
             }
@@ -617,8 +628,39 @@ export default class MainMenuScene extends Phaser.Scene {
     }
 
     eliminaBottoneDelLogIn() {
-        if (localStorage.getItem("playerLogged") == true && this.logInBtn) {
+        if (localStorage.getItem("playerLogged") === "true" && this.logInBtn) {
             this.logInBtn.destroy();
+            this.logInBtn = null;
+        }
+    }
+
+
+    faiApparireBarraGiocatore() {
+        if (this.barraGiocatorePuoApparire) {
+            this.tweens.add({
+                targets: this.barraGiocatore,
+                x: 2780,
+                alpha: 1,
+                duration: 500
+            });
+            this.nomeUtenteBarraGiocatore = this.add.text(this.barraGiocatore.x - 30, this.barraGiocatore.y - 10, "user").setAlpha(0);
+            this.tweens.add({
+                targets: this.nomeUtenteBarraGiocatore,
+                x: 2700,
+                alpha: 1,
+                duration: 500
+            });
+
+            this.barraGiocatorePuoApparire = false;
+            this.puoiAggiornareNomeUtente = true;
+        }
+
+    }
+
+    aggiornaNomeUtentePostLogIn() {
+        if (window.player.username && this.puoiAggiornareNomeUtente) {
+            this.nomeUtenteBarraGiocatore.setText(window.player.username);
+            this.puoiAggiornareNomeUtente = false;
         }
     }
 }

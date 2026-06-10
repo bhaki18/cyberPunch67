@@ -22,7 +22,10 @@ export default class BootScene // questa è la prima scena del gioco. non il car
     }
 
     create() {
-        localStorage.setItem("playerLogged", false);
+
+
+
+
         const H = 600;
         const W = 800;
 
