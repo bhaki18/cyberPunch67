@@ -19,7 +19,8 @@ app.use(express.json());
 app.use(cors({
   origin: [
     "http://127.0.0.1:5500",
-    "http://localhost:5500"
+    "http://localhost:5500",
+    "https://mellow-paprenjak-b3d7d3.netlify.app"
   ]
 }));
 
@@ -31,7 +32,8 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://127.0.0.1:5500",
-      "http://localhost:5500"
+      "http://localhost:5500",
+      "https://mellow-paprenjak-b3d7d3.netlify.app"
     ],
     methods: ["GET", "POST"]
   }
