@@ -125,13 +125,6 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
 
-            if (!window.socket.isLogged) {
-
-                console.log("loggati prima di giocare")
-            } else {
-                this.logInBtn.destroy();
-                console.log("socket connesso:" + socket.username)
-            }
         });
 
         // PLAY OFFLINE BUTTON
@@ -171,6 +164,12 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottonePlayOffline.on("pointerdown", () => {
             this.bottonePlayOffline.setFrame(2);
+            this.tweens.add({
+                targets: this.bottonePlayOffline,
+                angle: -2,
+                duration: 50,
+                yoyo: true
+            });
         });
         this.bottonePlayOffline.on("pointerup", () => {
             this.bottonePlayOffline.setFrame(1);
@@ -215,6 +214,12 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottoneInventory.on("pointerdown", () => {
             this.bottoneInventory.setFrame(2);
+            this.tweens.add({
+                targets: this.bottoneInventory,
+                angle: -2,
+                duration: 50,
+                yoyo: true
+            });
         });
         this.bottoneInventory.on("pointerup", () => {
             this.bottoneInventory.setFrame(1);
@@ -260,6 +265,12 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottoneInfo.on("pointerdown", () => {
             this.bottoneInfo.setFrame(2);
+            this.tweens.add({
+                targets: this.bottoneInfo,
+                angle: -2,
+                duration: 50,
+                yoyo: true
+            });
         });
         this.bottoneInfo.on("pointerup", () => {
             this.bottoneInfo.setFrame(1);
@@ -496,7 +507,7 @@ export default class MainMenuScene extends Phaser.Scene {
                     duration: 600,
                     ease: "Cubic.Out",
                     onStart: () => {
-                        this.sound.play("dropSfx", { volume: 0.5 });
+
                         setTimeout(() => {
                             this.time.delayedCall(600, () => {
                                 this.tweens.add({

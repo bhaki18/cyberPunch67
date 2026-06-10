@@ -45,6 +45,31 @@ export default class SignUpScene extends Phaser.Scene {
 
         });
 
+        // LOG IN txt
+
+        this.singUpText = this.add.text(width / 2,
+            height / 2 + 80, "already have any account?\n log in here!", {
+            fontSize: "18px",
+            color: "#ffffff"
+        }).setOrigin(0.5).setDepth(4);
+
+        // LOG IN btn
+        this.singUpBtn = this.add.rectangle(
+            width / 2,
+            height / 2 + 80,
+            260,
+            30,
+            0x0000ff
+        ).setInteractive()
+            .setOrigin(0.5).setDepth(3);
+
+        this.singUpBtn.on("pointerup", () => {
+            this.scene.launch("LogInScene");
+            this.shutdown();
+            this.scene.stop();
+
+        })
+
         // ---------------- USERNAME INPUT
         this.usernameInput = document.createElement("input");
         this.usernameInput.placeholder = "username";

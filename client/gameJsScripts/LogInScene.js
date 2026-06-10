@@ -43,6 +43,30 @@ export default class LogInScene extends Phaser.Scene {
             this.shutdown();
         });
 
+        // SING UP txt
+
+        this.singUpText = this.add.text(width / 2,
+            height / 2 + 80, "don't have any account?\n sing up here!", {
+            fontSize: "18px",
+            color: "#ffffff"
+        }).setOrigin(0.5).setDepth(4);
+
+        // SING UP btn
+        this.singUpBtn = this.add.rectangle(
+            width / 2,
+            height / 2 + 80,
+            260,
+            30,
+            0x0000ff
+        ).setInteractive()
+            .setOrigin(0.5).setDepth(3);
+
+        this.singUpBtn.on("pointerup", () => {
+            this.scene.launch("SignUpScene");
+            this.shutdown();
+            this.scene.stop();
+
+        })
         // ---------------- INPUT DOM USERNAME
         this.usernameInput = document.createElement("input");
         this.usernameInput.placeholder = "username";
@@ -132,11 +156,9 @@ export default class LogInScene extends Phaser.Scene {
             window.socket = this.socket;
             this.socket.on("playerLoggato", (player) => {
                 window.player = player;
-                console.table(window.player);
             });
 
             this.socket.on("connect", () => {
-                console.log("Socket connesso:", this.socket.id);
 
                 window.socket.isLogged = true;
 

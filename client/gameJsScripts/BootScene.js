@@ -67,7 +67,6 @@ export default class BootScene // questa è la prima scena del gioco. non il car
                 this.animationCanStart = false;
                 setTimeout(() => {
                     this.animation2CanStart = true;
-                    console.log("animazione 2 portata a true con successo");
                 }, 500);
 
             }
