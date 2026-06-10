@@ -130,9 +130,17 @@ export default class LogInScene extends Phaser.Scene {
                 }
             });
             window.socket = this.socket;
+            this.socket.on("playerLoggato", (player) => {
+                window.player = player;
+                console.table(window.player);
+            });
 
             this.socket.on("connect", () => {
                 console.log("Socket connesso:", this.socket.id);
+
+                window.socket.isLogged = true;
+
+
 
                 // vai all'hub
                 this.shutdown();

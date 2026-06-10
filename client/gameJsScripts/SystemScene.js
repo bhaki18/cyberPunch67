@@ -3,8 +3,10 @@ export default class SystemScene extends Phaser.Scene {
         super("SystemScene");
     }
 
+
     create() {
 
+        window.socket.isLogged = false;
         // PER LO SCHERMO INTERO
         const f5 = this.input.keyboard.addKey(
             Phaser.Input.Keyboard.KeyCodes.F5

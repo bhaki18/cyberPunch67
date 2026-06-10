@@ -124,8 +124,14 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
-            this.scene.launch("LogInScene");
 
+            if (!window.socket.isLogged) {
+
+                console.log("loggati prima di giocare")
+            } else {
+                this.logInBtn.destroy();
+                console.log("socket connesso:" + socket.username)
+            }
         });
 
         // PLAY OFFLINE BUTTON
@@ -303,6 +309,44 @@ export default class MainMenuScene extends Phaser.Scene {
             ease: "Sine.inOut"
         });
 
+        // bottone di logIn (diverso dagli altri)
+
+        this.logInBtn = this.add.sprite(XbtnFinale + 600, 120, "logInBtn")
+            .setInteractive({ useHandCursor: true }, { pixelPerfect: true })
+            .setDepth(10)
+            .setAlpha(0);
+
+
+
+        this.logInBtn.on("pointerover", () => {
+            this.tweens.add({
+                targets: this.logInBtn,
+                scale: 1.25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
+
+
+
+        });
+        this.logInBtn.on("pointerout", () => {
+            this.logInBtn.setFrame(0);
+            this.tweens.add({
+                targets: this.logInBtn,
+                scale: 1,
+                duration: 180,
+                ease: "Sine.easeOut"
+            });
+
+        });
+        this.logInBtn.on("pointerdown", () => {
+            this.logInBtn.setFrame(2);
+        });
+        this.logInBtn.on("pointerup", () => {
+            this.logInBtn.setFrame(1);
+            this.scene.launch("LogInScene");
+
+        });
 
 
         // PERSONAGGIO CHE DEVE CADERE 
@@ -445,6 +489,37 @@ export default class MainMenuScene extends Phaser.Scene {
                 this.arrayDiBottoni[this.arrayDiBottoni.length - 1].x === 2740) {
                 this.btnsCanFall = false;
 
+                this.tweens.add({
+                    targets: this.logInBtn,
+                    y: 40,
+                    alpha: 1,
+                    duration: 600,
+                    ease: "Cubic.Out",
+                    onStart: () => {
+                        this.sound.play("dropSfx", { volume: 0.5 });
+                        setTimeout(() => {
+                            this.time.delayedCall(600, () => {
+                                this.tweens.add({
+                                    targets: this.logInBtn,
+                                    scaleX: 1.35,
+                                    scaleY: 0.65,
+                                    duration: 120,
+                                    ease: "Quad.Out",
+                                    yoyo: true
+                                });
+
+                                this.tweens.add({
+                                    targets: this.logInBtn,
+                                    scaleX: 0.95,
+                                    scaleY: 1.05,
+                                    duration: 180,
+                                    delay: 120,
+                                    ease: "Elastic.Out(1, 0.4)"
+                                });
+                            });
+                        }, 600);
+                    }
+                });
 
 
 

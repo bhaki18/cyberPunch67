@@ -10,6 +10,10 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 
+
+let Player;
+
+
 // ---------------- MIDDLEWARE
 app.use(express.json());
 
@@ -37,21 +41,24 @@ const io = new Server(server, {
 
 app.post("/auth/login", async (req, res) => {
   try {
-    const player = await LoginPlayer(
+    const user = await LoginPlayer(
       req.body.username,
       req.body.password
     );
+    Player = user;
+    socket.emit("playerLoggato", (player));
 
     const token = jwt.sign(
       {
-        userId: player._id,
-        username: player.username
+        userId: user._id,
+        username: user.username
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     res.json({ token });
+
 
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -93,6 +100,8 @@ io.on("connection", (socket) => {
   socket.emit("welcome", {
     user: socket.user
   });
+
+
 
   socket.on("disconnect", () => {
     console.log("Logout:", socket.user.username);
