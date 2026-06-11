@@ -1,0 +1,315 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --cyber-cyan: #00f0ff;
+  --cyber-pink: #ff007f;
+  --cyber-yellow: #fcee0a;
+  --cyber-dark: #0d0e15;
+  --cyber-glow-cyan: 0 0 10px var(--cyber-cyan), 0 0 20px rgba(0, 240, 255, 0.3);
+  --cyber-glow-pink: 0 0 10px var(--cyber-pink), 0 0 20px rgba(255, 0, 127, 0.3);
+}
+
+/* Base Body Styles (just in case) */
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Rajdhani', sans-serif;
+  background-color: #000;
+}
+
+/* Modal Overlay Container */
+.cyber-modal-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 440px;
+  background: rgba(13, 14, 21, 0.85);
+  backdrop-filter: blur(15px);
+  border: 2px solid var(--cyber-cyan);
+  border-top: 4px solid var(--cyber-pink);
+  border-radius: 4px;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.1);
+  padding: 35px 30px 25px 30px;
+  z-index: 9999;
+  box-sizing: border-box;
+  animation: cyberReveal 0.35s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+  
+  /* Cyberpunk cut corner */
+  clip-path: polygon(0% 0%, 93% 0%, 100% 8%, 100% 100%, 0% 100%);
+}
+
+/* Outer glow wrapper using drop-shadow to handle the clip-path */
+.cyber-modal-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.25));
+}
+
+/* Scanline Effect */
+.cyber-modal-overlay::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 10;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Title Header */
+.cyber-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 30px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  text-shadow: var(--cyber-glow-pink);
+  position: relative;
+}
+
+/* Decorative subtitle under title */
+.cyber-subtitle {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--cyber-cyan);
+  text-align: center;
+  margin-top: -25px;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+  opacity: 0.8;
+  font-weight: 700;
+  text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+}
+
+/* Close Button (X) */
+.cyber-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: var(--cyber-pink);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 11;
+  transition: all 0.2s ease;
+  padding: 5px;
+  line-height: 1;
+}
+
+.cyber-close-btn:hover {
+  color: #fff;
+  text-shadow: var(--cyber-glow-pink);
+  transform: scale(1.2) rotate(90deg);
+}
+
+/* Input Fields Container */
+.cyber-form {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 11;
+}
+
+.cyber-input-group {
+  position: relative;
+  margin-bottom: 25px;
+}
+
+/* Cyber Inputs styling */
+.cyber-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-bottom: 2px solid var(--cyber-cyan);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  border-radius: 4px 4px 0 0;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Focus and active state */
+.cyber-input:focus {
+  background: rgba(0, 240, 255, 0.05);
+  border-color: rgba(255, 0, 127, 0.3);
+  border-bottom: 2px solid var(--cyber-pink);
+  box-shadow: 0 4px 15px rgba(255, 0, 127, 0.15);
+}
+
+/* Floating labels */
+.cyber-label {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Floating effect when input has text or is focused */
+.cyber-input:focus ~ .cyber-label,
+.cyber-input:not(:placeholder-shown) ~ .cyber-label {
+  top: -8px;
+  left: 10px;
+  font-size: 12px;
+  color: var(--cyber-cyan);
+  text-shadow: 0 0 5px rgba(0, 240, 255, 0.6);
+  background: #0d0e15;
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+/* Submit Button */
+.cyber-submit-btn {
+  background: var(--cyber-cyan);
+  border: none;
+  color: #000;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  padding: 14px;
+  margin-top: 10px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+  clip-path: polygon(7% 0%, 100% 0%, 93% 100%, 0% 100%);
+  text-transform: uppercase;
+  box-shadow: var(--cyber-glow-cyan);
+}
+
+.cyber-submit-btn:hover {
+  background: var(--cyber-pink);
+  color: #fff;
+  box-shadow: var(--cyber-glow-pink);
+  clip-path: polygon(0% 0%, 93% 0%, 100% 100%, 7% 100%);
+  transform: translateY(-2px);
+}
+
+.cyber-submit-btn:active {
+  transform: translateY(1px);
+}
+
+.cyber-submit-btn:disabled {
+  background: #2b353d;
+  color: #6a7c8a;
+  box-shadow: none;
+  cursor: not-allowed;
+  clip-path: none;
+  transform: none;
+}
+
+/* Footnotes & Redirect link options */
+.cyber-footer {
+  margin-top: 25px;
+  text-align: center;
+  z-index: 11;
+  font-weight: 600;
+}
+
+.cyber-switch-link {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-decoration: none;
+  transition: all 0.25s;
+  cursor: pointer;
+  display: block;
+}
+
+.cyber-switch-link span {
+  color: var(--cyber-cyan);
+  font-weight: 700;
+  text-decoration: underline;
+  transition: all 0.2s;
+}
+
+.cyber-switch-link:hover span {
+  color: var(--cyber-pink);
+  text-shadow: 0 0 8px rgba(255, 0, 127, 0.8);
+}
+
+/* Loading connection state */
+.cyber-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  color: var(--cyber-pink);
+  text-shadow: var(--cyber-glow-pink);
+  margin-top: 15px;
+  text-align: center;
+}
+
+/* Cyber glitchy loader spinner animation */
+.cyber-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--cyber-pink);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  box-shadow: 0 0 5px var(--cyber-pink);
+}
+
+/* Info help text at the bottom */
+.cyber-help-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  margin-top: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* KEYFRAME ANIMATIONS */
+@keyframes cyberReveal {
+  0% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0;
+    filter: brightness(2) contrast(1.5);
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1.02);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: none;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

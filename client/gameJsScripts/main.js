@@ -7,6 +7,12 @@ import MainMenuScene from "./MainMenuScene.js";
 import LogInScene from "./LogInScene.js";
 import HubScene from "./HubScene.js";
 import SignUpScene from "./SingUpScene.js";
+import ArenaScene from "./ArenaScene.js";
+import endMatchScene from "./endMatchScene.js";
+import InfoScene from "./InfoScene.js";
+import InventoryScene from "./InventoryScene.js";
+import PauseScene from "./PauseScene.js";
+import UpgradeScene from "./UpgradeScene.js";
 
 const config = {
     type: Phaser.AUTO,
@@ -35,7 +41,13 @@ const config = {
         MainMenuScene,
         LogInScene,
         SignUpScene,
-        HubScene]
+        HubScene,
+        ArenaScene,
+        endMatchScene,
+        InfoScene,
+        InventoryScene,
+        PauseScene,
+        UpgradeScene]
 };
 
 const game = new Phaser.Game(config);

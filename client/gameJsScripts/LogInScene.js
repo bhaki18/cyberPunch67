@@ -2,128 +2,97 @@ export default class LogInScene extends Phaser.Scene {
     constructor() {
         super("LogInScene");
 
-        this.tryLogin = false;
         this.isLoggingIn = false;
     }
 
     create() {
+        // Create the Cyberpunk form container overlay
+        this.overlay = document.createElement("div");
+        this.overlay.className = "cyber-modal-overlay";
+        this.overlay.innerHTML = `
+            <button class="cyber-close-btn" id="cyber-close-btn" title="Close">&times;</button>
+            <h2 class="cyber-title">System LogIn</h2>
+            <div class="cyber-subtitle">cyber_punch_67 // credentials</div>
+            <form class="cyber-form" id="cyber-login-form">
+                <div class="cyber-input-group">
+                    <input type="text" id="cyber-username" class="cyber-input" required placeholder=" " autocomplete="username">
+                    <label for="cyber-username" class="cyber-label">Username</label>
+                </div>
+                <div class="cyber-input-group">
+                    <input type="password" id="cyber-password" class="cyber-input" required placeholder=" " autocomplete="current-password">
+                    <label for="cyber-password" class="cyber-label">Password</label>
+                </div>
+                <button type="submit" class="cyber-submit-btn" id="cyber-submit-btn">Intrude // Enter</button>
+                <div class="cyber-loader" id="cyber-loader" style="display: none;">
+                    <div class="cyber-spinner"></div>
+                    <span>Establishing Link...</span>
+                </div>
+                <div class="cyber-footer">
+                    <a class="cyber-switch-link" id="cyber-signup-link">
+                        No account? <span>Establish credentials</span>
+                    </a>
+                </div>
+                <div class="cyber-help-text">Authorized access only</div>
+            </form>
+        `;
+        document.body.appendChild(this.overlay);
 
-        const { width, height } = this.scale;
+        // Keep references for compatibility/safety
+        this.usernameInput = this.overlay.querySelector("#cyber-username");
+        this.passwordInput = this.overlay.querySelector("#cyber-password");
 
-        // ---------------- PANEL UI
-        this.panel = this.add.rectangle(
-            width / 2,
-            height / 2,
-            420,
-            280,
-            0x111111,
-            0.95
-        );
-
-        this.add.text(width / 2, height / 2 - 110, "LOGIN", {
-            fontSize: "22px",
-            color: "#ffffff"
-        }).setOrigin(0.5);
-
-        // ---------------- CLOSE BUTTON
-        this.closeBtn = this.add.rectangle(
-            width / 2 + 190,
-            height / 2 - 130,
-            30,
-            30,
-            0xff0000
-        ).setInteractive();
-
-        this.add.text(this.closeBtn.x, this.closeBtn.y, "X", {
-            fontSize: "18px",
-            color: "#ffffff"
-        }).setOrigin(0.5);
-
-        this.closeBtn.on("pointerdown", () => {
-            this.scene.stop();
+        // Close button listener
+        const closeBtn = this.overlay.querySelector("#cyber-close-btn");
+        closeBtn.addEventListener("click", () => {
             this.shutdown();
+            this.scene.stop();
         });
 
-        // SING UP txt
-
-        this.singUpText = this.add.text(width / 2,
-            height / 2 + 80, "don't have any account?\n sing up here!", {
-            fontSize: "18px",
-            color: "#ffffff"
-        }).setOrigin(0.5).setDepth(4);
-
-        // SING UP btn
-        this.singUpBtn = this.add.rectangle(
-            width / 2,
-            height / 2 + 80,
-            260,
-            30,
-            0x0000ff
-        ).setInteractive()
-            .setOrigin(0.5).setDepth(3);
-
-        this.singUpBtn.on("pointerup", () => {
-            this.scene.launch("SignUpScene");
+        // Sign up link listener
+        const signupLink = this.overlay.querySelector("#cyber-signup-link");
+        signupLink.addEventListener("click", () => {
             this.shutdown();
             this.scene.stop();
+            this.scene.launch("SignUpScene");
+        });
 
-        })
-        // ---------------- INPUT DOM USERNAME
-        this.usernameInput = document.createElement("input");
-        this.usernameInput.placeholder = "username";
-        this.usernameInput.style.position = "absolute";
-        this.usernameInput.style.left = "50%";
-        this.usernameInput.style.top = "45%";
-        this.usernameInput.style.transform = "translate(-50%, -50%)";
-        document.body.appendChild(this.usernameInput);
-
-        // ---------------- INPUT DOM PASSWORD
-        this.passwordInput = document.createElement("input");
-        this.passwordInput.type = "password";
-        this.passwordInput.placeholder = "password";
-        this.passwordInput.style.position = "absolute";
-        this.passwordInput.style.left = "50%";
-        this.passwordInput.style.top = "52%";
-        this.passwordInput.style.transform = "translate(-50%, -50%)";
-        document.body.appendChild(this.passwordInput);
-
-        // ---------------- INFO TEXT
-        this.add.text(width / 2, height / 2 + 110, "ENTER per login", {
-            fontSize: "14px",
-            color: "#aaaaaa"
-        }).setOrigin(0.5);
-
-        // ---------------- ENTER KEY
-        this.enterKey = this.input.keyboard.addKey(
-            Phaser.Input.Keyboard.KeyCodes.ENTER
-        );
+        // Form submit listener
+        const form = this.overlay.querySelector("#cyber-login-form");
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            
+            const usernameVal = this.usernameInput.value;
+            const passwordVal = this.passwordInput.value;
+            
+            if (!usernameVal || !passwordVal) return;
+            
+            this.connettiAlServer({
+                usernameInput: usernameVal,
+                passwordInput: passwordVal
+            });
+        });
     }
 
     update() {
-
-        if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
-            this.tryLogin = true;
-        }
-
-        if (this.tryLogin) {
-            this.tryLogin = false;
-
-            const dati = {
-                usernameInput: this.usernameInput.value,
-                passwordInput: this.passwordInput.value
-            };
-
-            if (!dati.usernameInput || !dati.passwordInput) {
-                console.log("Missing fields");
-                return;
-            }
-
-
-            this.connettiAlServer(dati);
-        }
+        // Logic handled through DOM events
     }
 
     async connettiAlServer(dati) {
+        if (this.isLoggingIn) return;
+        this.isLoggingIn = true;
+
+        const loader = this.overlay?.querySelector("#cyber-loader");
+        const submitBtn = this.overlay?.querySelector("#cyber-submit-btn");
+        const inputs = this.overlay?.querySelectorAll(".cyber-input");
+        const closeBtn = this.overlay?.querySelector("#cyber-close-btn");
+
+        if (loader) loader.style.display = "flex";
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Connecting...";
+        }
+        if (inputs) inputs.forEach(input => input.disabled = true);
+        if (closeBtn) closeBtn.disabled = true;
 
         try {
             const res = await fetch("https://cyberpunch67.onrender.com/auth/login", {
@@ -142,6 +111,14 @@ export default class LogInScene extends Phaser.Scene {
             if (!data.token) {
                 console.log("Login fallito:", data);
                 this.isLoggingIn = false;
+                
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Access Denied - Retry";
+                }
+                if (loader) loader.style.display = "none";
+                if (inputs) inputs.forEach(input => input.disabled = false);
+                if (closeBtn) closeBtn.disabled = false;
                 return;
             }
 
@@ -161,10 +138,7 @@ export default class LogInScene extends Phaser.Scene {
             });
 
             this.socket.on("connect", () => {
-
                 window.socket.isLogged = true;
-
-
 
                 // vai all'hub
                 this.shutdown();
@@ -174,17 +148,29 @@ export default class LogInScene extends Phaser.Scene {
 
         } catch (err) {
             console.error("Errore login:", err);
-            this.shutdown();
+            this.isLoggingIn = false;
+            
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Error - Retry";
+            }
+            if (loader) loader.style.display = "none";
+            if (inputs) inputs.forEach(input => input.disabled = false);
+            if (closeBtn) closeBtn.disabled = false;
+            
             localStorage.setItem("playerLogged", "false");
-        } finally {
-            this.shutdown();
         }
     }
 
     shutdown() {
-        // pulizia DOM
-        if (this.usernameInput) this.usernameInput.remove();
-        if (this.passwordInput) this.passwordInput.remove();
+        // Clean up DOM container
+        if (this.overlay) {
+            this.overlay.remove();
+            this.overlay = null;
+        }
+        // Fallback cleanup
+        if (this.usernameInput && this.usernameInput.parentNode) this.usernameInput.remove();
+        if (this.passwordInput && this.passwordInput.parentNode) this.passwordInput.remove();
     }
 }
 
