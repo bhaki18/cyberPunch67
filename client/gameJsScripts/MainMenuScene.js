@@ -1,28 +1,59 @@
+/**
+ * @class MainMenuScene
+ * @extends Phaser.Scene
+ * @description Scena del Menu Principale del gioco.
+ * Gestisce l'introduzione cinematografica (movimento telecamera, caduta e oscillazione dell'arena),
+ * l'apparizione e le interazioni dei pulsanti principali (Gioca Online/Offline, Inventario, Info, LogIn),
+ * la caduta controllata del personaggio del giocatore con ombra proiettata,
+ * e il rendering dei dati del giocatore loggato (nome e livello) con font pixel-art.
+ */
 export default class MainMenuScene extends Phaser.Scene {
     constructor() {
         super("MainMenuScene");
+        
+        // --- PROPRIETÀ DELLA MAPPA E DEL TILESET
         this.mapMainMenu;
         this.groundLayerMainMenu;
         this.wallsLayerMainMenu;
         this.tilesetMainMenu;
         this.arrayDiLayer = [];
+
+        // --- STATO DELLA TELECAMERA E SCROLLING
         this.cameraSpeed = 0;
-        this.phase = "ACCELERATE";
-        this.arenaStartX = 2800; // posizione dove inizia l’arena
+        this.phase = "ACCELERATE"; // Fasi: ACCELERATE -> CONSTANT -> DECCELERATE -> STOP
+        this.arenaStartX = 2800;    // Coordinata X finale dove si posiziona l'arena
         this.cameraCanMove = false;
+
+        // --- GESTIONE DEI PULSANTI
+        this.bottoneAttuale = 0;    // Indice per far scendere i bottoni in sequenza
+        this.arrayDiBottoni = [];
+        this.btnsCanFall = false;
+        
+        // --- STATO DEL PERSONAGGIO (DOMINANT RED)
         this.personaggioPuoApparire = false;
-        this.bottoneAttuale = 0;
+        this.personaggioPuoOscillare = false;
+        this.dominantRedPuoRespirare = false;
+        this.dominantRedStaAspettando = false;
+        
+        // --- STATO DELLA BARRA GIOCATORE HUD
+        this.barraGiocatorePuoApparire = false;
+        this.puoiAggiornareNomeUtente = false;
     }
 
+    /**
+     * Inizializzazione della scena. Crea la mappa, configura gli sfondi mobili,
+     * istanzia i bottoni con i loro eventi interattivi e avvia le timeline.
+     */
     create() {
+        const { width, height } = this.scale;
 
-        // 1. crea tilemap dal JSON
+        // --- 1. SETUP TILEMAP E STRUTTURA SCENICA
+        // Genera la tilemap caricando il JSON precedentemente precaricato
         this.mapMainMenu = this.make.tilemap({ key: "MapArenaFluttuante" });
-
-        // 2. collega tileset del JSON con l'immagine caricata
+        // Associa il tileset del JSON all'immagine effettiva degli sprite
         this.tilesetMainMenu = this.mapMainMenu.addTilesetImage("cyberpunk_tileset", "tilesArenaFluttuante");
 
-        // 3. crea layer (nomi reali dalla mappa, dal basso verso l'alto)
+        // Istanziazione ordinata di tutti i layer della mappa esportati da Tiled
         this.groundLayerMainMenu = this.mapMainMenu.createLayer("ground", this.tilesetMainMenu, 0, 0);
         this.ground2LayerMainMenu = this.mapMainMenu.createLayer("ground2", this.tilesetMainMenu, 0, 0);
         this.ground3LayerMainMenu = this.mapMainMenu.createLayer("ground3", this.tilesetMainMenu, 0, 0);
@@ -31,8 +62,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.walls2LayerMainMenu = this.mapMainMenu.createLayer("walls2", this.tilesetMainMenu, 0, 0);
         this.laserLayer = this.mapMainMenu.createLayer("laserLayer", this.tilesetMainMenu, 0, 0);
 
-        // 4. crea un array di layer per modificarli dopo
-
+        // Raggruppa i layer in un array per manipolarli contemporaneamente (es. farli oscillare all'unisono)
         this.arrayDiLayer.push(
             this.groundLayerMainMenu,
             this.ground2LayerMainMenu,
@@ -43,64 +73,60 @@ export default class MainMenuScene extends Phaser.Scene {
             this.laserLayer
         );
 
-        this.arrayDiLayer.forEach(a => {
-            a.setOrigin(0.5)
-            a.x = this.arenaStartX;
-            a.y = 100;
-
+        // Imposta l'origine di tutti i layer al centro e posizionali alle coordinate X di destinazione
+        this.arrayDiLayer.forEach(layer => {
+            layer.setOrigin(0.5);
+            layer.x = this.arenaStartX;
+            layer.y = 100;
         });
 
+        // Correzione di offset verticale per il ground base
         this.groundLayerMainMenu.setY(this.groundLayerMainMenu.y + 10);
 
-
-        // background map
-
+        // --- 2. SFONDO SPAZIALE RIPETUTO (TILE SPRITE)
         this.spaceBg = this.add.tileSprite(
             -32,
             408,
-            this.scale.width,
-            this.scale.height,
+            width,
+            height,
             "space"
         )
             .setScale(9)
             .setDepth(-2);
 
-
+        // Ritardo di 200ms prima di consentire il movimento introduttivo della telecamera
         setTimeout(() => {
             this.cameraCanMove = true;
         }, 200);
 
+        // --- 3. CREAZIONE E CONFIGURAZIONE DEI BOTTONI INTERATTIVI DEL MENU
+        const xBtn = 3600;      // Coordinata X iniziale (fuori dallo schermo destro)
+        const yBtn = 200;       // Coordinata Y iniziale per il primo bottone
+        const XbtnFinale = 2760; // Coordinata X finale dove si fermeranno i pulsanti
 
-
-        // BOTTONI  
-        const xBtn = 3600;
-        const yBtn = 200;
-        const XbtnFinale = 2760;
-
-        // PLAY ONLINE BTN
+        // --- PULSANTE PLAY ONLINE
         this.bottonePlayOnline = this.add.image(xBtn, yBtn, "playOnlineBtn")
             .setInteractive({ pixelPerfect: true })
             .setScale(2)
             .setDepth(2);
 
-
+        // Effetti grafici per l'hover sul pulsante online
         this.bottonePlayOnline.on("pointerover", () => {
-
             this.tweens.add({
                 targets: this.bottonePlayOnline,
                 scale: 2.25,
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
             this.tweens.add({
                 targets: this.bottonePlayOnline,
                 x: XbtnFinale + 25,
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
         });
+        
+        // Ripristino dello stato quando il mouse esce dal pulsante online
         this.bottonePlayOnline.on("pointerout", () => {
             this.bottonePlayOnline.setFrame(0);
             this.tweens.add({
@@ -110,11 +136,11 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 180,
                 ease: "Sine.easeOut"
             });
-
         });
+
+        // Effetto grafico alla pressione (click down)
         this.bottonePlayOnline.on("pointerdown", () => {
             this.bottonePlayOnline.setFrame(2);
-
             this.tweens.add({
                 targets: this.bottonePlayOnline,
                 angle: -2,
@@ -122,19 +148,16 @@ export default class MainMenuScene extends Phaser.Scene {
                 yoyo: true
             });
         });
+
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
-            console.table(window.player);
-
         });
 
-        // PLAY OFFLINE BUTTON
+        // --- PULSANTE PLAY OFFLINE
         this.bottonePlayOffline = this.add.image(xBtn, yBtn, "playOfflineBtn")
             .setInteractive({ pixelPerfect: true })
             .setScale(2)
             .setDepth(2);
-
-
 
         this.bottonePlayOffline.on("pointerover", () => {
             this.tweens.add({
@@ -143,15 +166,14 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
             this.tweens.add({
                 targets: this.bottonePlayOffline,
                 x: XbtnFinale + 25,
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
         });
+
         this.bottonePlayOffline.on("pointerout", () => {
             this.bottonePlayOffline.setFrame(0);
             this.tweens.add({
@@ -161,8 +183,8 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 180,
                 ease: "Sine.easeOut"
             });
-
         });
+
         this.bottonePlayOffline.on("pointerdown", () => {
             this.bottonePlayOffline.setFrame(2);
             this.tweens.add({
@@ -172,19 +194,16 @@ export default class MainMenuScene extends Phaser.Scene {
                 yoyo: true
             });
         });
+
         this.bottonePlayOffline.on("pointerup", () => {
             this.bottonePlayOffline.setFrame(1);
-
         });
 
-        // INVENTORY BUTTON 
-
+        // --- PULSANTE INVENTARIO
         this.bottoneInventory = this.add.image(xBtn, yBtn, "inventoryBtn")
             .setInteractive({ pixelPerfect: true })
             .setScale(2)
             .setDepth(2);
-
-
 
         this.bottoneInventory.on("pointerover", () => {
             this.tweens.add({
@@ -193,15 +212,14 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
             this.tweens.add({
                 targets: this.bottoneInventory,
                 x: XbtnFinale + 25,
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
         });
+
         this.bottoneInventory.on("pointerout", () => {
             this.bottoneInventory.setFrame(0);
             this.tweens.add({
@@ -211,8 +229,8 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 180,
                 ease: "Sine.easeOut"
             });
-
         });
+
         this.bottoneInventory.on("pointerdown", () => {
             this.bottoneInventory.setFrame(2);
             this.tweens.add({
@@ -222,20 +240,18 @@ export default class MainMenuScene extends Phaser.Scene {
                 yoyo: true
             });
         });
+
         this.bottoneInventory.on("pointerup", () => {
             this.bottoneInventory.setFrame(1);
-
+            // Avvio della scena dell'inventario del giocatore
+            this.scene.start("InventoryScene");
         });
 
-        // INFO BUTTON
-
+        // --- PULSANTE INFORMAZIONI (INFO)
         this.bottoneInfo = this.add.image(xBtn, yBtn, "infoBtn")
             .setInteractive({ pixelPerfect: true })
             .setScale(2)
             .setDepth(2);
-
-
-
 
         this.bottoneInfo.on("pointerover", () => {
             this.tweens.add({
@@ -244,15 +260,14 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
             this.tweens.add({
                 targets: this.bottoneInfo,
                 x: XbtnFinale + 25,
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
         });
+
         this.bottoneInfo.on("pointerout", () => {
             this.bottoneInfo.setFrame(0);
             this.tweens.add({
@@ -262,8 +277,8 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 180,
                 ease: "Sine.easeOut"
             });
-
         });
+
         this.bottoneInfo.on("pointerdown", () => {
             this.bottoneInfo.setFrame(2);
             this.tweens.add({
@@ -273,62 +288,36 @@ export default class MainMenuScene extends Phaser.Scene {
                 yoyo: true
             });
         });
+
         this.bottoneInfo.on("pointerup", () => {
             this.bottoneInfo.setFrame(1);
-
         });
 
-
+        // --- 4. DISPOSIZIONE E ANIMAZIONE CONTINUA DEI BOTTONI
         this.arrayDiBottoni = [this.bottonePlayOnline, this.bottonePlayOffline, this.bottoneInventory, this.bottoneInfo];
 
+        // Distribuisce verticalmente i bottoni a distanze regolari di 90px
         for (let i = 0; i < this.arrayDiBottoni.length; i++) {
-            this.arrayDiBottoni[i].y = yBtn + (i * 90)
+            this.arrayDiBottoni[i].y = yBtn + (i * 90);
         }
 
-        this.tweens.add({
-            targets: this.bottonePlayOnline,
-            y: this.bottonePlayOnline.y + 5,
-            duration: 800,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.inOut"
+        // Applica un'oscillazione verticale sinusoidale continua a ciascun bottone per un effetto galleggiante
+        this.arrayDiBottoni.forEach(btn => {
+            this.tweens.add({
+                targets: btn,
+                y: btn.y + 5,
+                duration: 800,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.inOut"
+            });
         });
 
-        this.tweens.add({
-            targets: this.bottonePlayOffline,
-            y: this.bottonePlayOffline.y + 5,
-            duration: 800,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.inOut"
-        });
-
-        this.tweens.add({
-            targets: this.bottoneInventory,
-            y: this.bottoneInventory.y + 5,
-            duration: 800,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.inOut"
-        });
-
-        this.tweens.add({
-            targets: this.bottoneInfo,
-            y: this.bottoneInfo.y + 5,
-            duration: 800,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.inOut"
-        });
-
-        // bottone di logIn (diverso dagli altri)
-
+        // --- 5. PULSANTE DI LOG IN
         this.logInBtn = this.add.sprite(XbtnFinale + 600, 120, "logInBtn")
             .setInteractive({ useHandCursor: true }, { pixelPerfect: true })
             .setDepth(10)
             .setAlpha(0);
-
-
 
         this.logInBtn.on("pointerover", () => {
             this.tweens.add({
@@ -337,10 +326,8 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 120,
                 ease: "Sine.easeOut"
             });
-
-
-
         });
+
         this.logInBtn.on("pointerout", () => {
             this.logInBtn.setFrame(0);
             this.tweens.add({
@@ -349,173 +336,156 @@ export default class MainMenuScene extends Phaser.Scene {
                 duration: 180,
                 ease: "Sine.easeOut"
             });
-
         });
+
         this.logInBtn.on("pointerdown", () => {
             this.logInBtn.setFrame(2);
         });
+
         this.logInBtn.on("pointerup", () => {
             this.logInBtn.setFrame(1);
+            // Avvio overlay di Login
             this.scene.launch("LogInScene");
-
         });
 
-
-        // PERSONAGGIO CHE DEVE CADERE 
+        // --- 6. ASSET VISIVI DEL PERSONAGGIO (DOMINANT RED) E SUA OMBRA
         this.dominantRed = this.add.sprite(this.arenaStartX + 200, -200, "dominantRedFalling")
             .setScale(1)
             .setDepth(3)
             .setOrigin(0.5);
 
-        // OMBRA DEL PERSONAGGIO CHE CADE
-
-        this.dominantRedShadow = this.add.sprite(
-            this.arenaStartX + 200,
-            -200,
-            "dominantRedFalling"
-        )
+        this.dominantRedShadow = this.add.sprite(this.arenaStartX + 200, -200, "dominantRedFalling")
             .setScale(2)
             .setDepth(2.5)
             .setAlpha(0.35)
-            .setTint(0x000000);
+            .setTint(0x000000); // Tinta nera per renderla un'ombra proiettata
 
-
-
-        // Barra del giocatore
-
+        // --- 7. HUD BAR DEL GIOCATORE (NOME UTENTE & LIVELLO)
         const XInizialeBarraDelGiocatore = 3500;
         const YInizialeBarraDelGiocatore = 550;
 
         this.barraGiocatore = this.add.sprite(XInizialeBarraDelGiocatore, YInizialeBarraDelGiocatore, "barraGiocatore")
-            .setAlpha(0).setScale(2.5);
-
-
-
-
-
-
+            .setAlpha(0)
+            .setScale(2.5);
     }
 
+    /**
+     * Loop principale di aggiornamento dei fotogrammi (60 FPS).
+     * Esegue in ordine tutte le sotto-funzioni di animazione, movimento e controlli di stato.
+     */
     update() {
-
-
-        this.animationInizialeMainMenu();
-        this.arenaCheOscilla();
-        this.bottoniCheAppaiono();
-        this.BugsHandler();
-        this.personaggioCheAppare();
-        this.DominantRedCheRespira();
-        this.DominantRedCheAspetta();
-        this.eliminaBottoneDelLogIn();
-        this.faiApparireBarraGiocatore();
-        this.aggiornaNomeUtentePostLogIn();
+        this.animationInizialeMainMenu(); // Movimento introduttivo telecamera
+        this.arenaCheOscilla();           // Oscillazione dell'arena nel vuoto
+        this.bottoniCheAppaiono();        // Discesa a catena dei bottoni
+        this.BugsHandler();               // Prevenzione di piccoli bug di posizionamento X
+        this.personaggioCheAppare();      // Caduta del personaggio sul terreno
+        this.DominantRedCheRespira();     // Animazione idle di respirazione
+        this.DominantRedCheAspetta();     // Animazioni acrobatiche casuali dell'attesa
+        this.eliminaBottoneDelLogIn();    // Ritiro del pulsante Login se l'utente è già loggato
+        this.faiApparireBarraGiocatore(); // Scivolamento della barra HUD
+        this.aggiornaNomeUtentePostLogIn(); // Aggiornamento scritte nome e livello post-login
 
         // Muove lo sfondo spaziale per dare l'effetto di movimento
         if (this.spaceBg) {
             this.spaceBg.tilePositionX += 0.25;
         }
-
     }
 
-
+    /**
+     * Gestisce la cinematica iniziale di scorrimento laterale della telecamera principale.
+     * Con una sequenza Accelerazione -> Velocità Costante -> Decelerazione -> Stop.
+     */
     animationInizialeMainMenu() {
-
         const cam = this.cameras.main;
-
         const distance = this.arenaStartX - cam.scrollX;
 
         if (!this.cameraCanMove) return;
 
-        // ---------------- ACCELERATE
+        // FASE ACCELERATE
         if (this.phase === "ACCELERATE") {
-
             this.cameraSpeed += 0.5;
-
             if (this.cameraSpeed >= 30) {
                 this.cameraSpeed = 30;
                 this.phase = "CONSTANT";
             }
         }
-
-        // ---------------- CONSTANT
+        // FASE CONSTANT
         else if (this.phase === "CONSTANT") {
-
             this.cameraSpeed = 30;
-
             if (distance < 500) {
                 this.phase = "DECCELERATE";
             }
         }
-
-        // ---------------- DECCELERATE
+        // FASE DECCELERATE
         else if (this.phase === "DECCELERATE") {
-
             this.cameraSpeed *= 0.95;
-
             if (this.cameraSpeed < 2) {
                 this.cameraSpeed = 2;
             }
-
             if (distance < 200) {
                 this.phase = "STOP";
             }
         }
-
-        // ---------------- STOP
+        // FASE STOP
         else if (this.phase === "STOP") {
-
             this.cameraSpeed = 0;
             this.cameraCanMove = false;
+            // Abilita la discesa dei bottoni dopo che la telecamera si ferma
             setTimeout(() => {
                 this.btnsCanFall = true;
-            }, 300)
-
+            }, 300);
             return;
         }
 
         cam.scrollX += this.cameraSpeed;
     }
 
-
+    /**
+     * Applica un'oscillazione sinusoidale verticale sia all'arena che al personaggio
+     * per simularne il galleggiamento nello spazio siderale.
+     */
     arenaCheOscilla() {
         const t = this.time.now * 0.002;
 
-        this.arrayDiLayer.forEach(a => {
-            a.y = 100 + Math.sin(t) * 5;
+        // Oscilla i layer dell'arena
+        this.arrayDiLayer.forEach(layer => {
+            layer.y = 100 + Math.sin(t) * 5;
         });
 
+        // Oscilla il player stando sulla piattaforma
         if (this.personaggioPuoOscillare) {
             this.dominantRed.y = 300 + Math.sin(t) * 5;
             this.dominantRedShadow.y = 300 + Math.sin(t) * 5;
         }
     }
 
+    /**
+     * Fa entrare lateralmente i bottoni del menu uno alla volta,
+     * producendo un piccolo sussulto dello schermo (shake) a ogni impatto.
+     */
     bottoniCheAppaiono() {
-
         if (this.btnsCanFall) {
+            const btn = this.arrayDiBottoni[this.bottoneAttuale];
 
-
-
-
-            const a = this.arrayDiBottoni[this.bottoneAttuale];
-
-            if (a.x > 2760) {
-                a.x -= 20;
+            // Muove il pulsante corrente verso la coordinata finale
+            if (btn.x > 2760) {
+                btn.x -= 20;
             }
-
-            if (a.x < 2760) {
-                a.x = 2760;
+            if (btn.x < 2760) {
+                btn.x = 2760;
             }
-            if (a.x === 2760) {
+            if (btn.x === 2760) {
+                // Impatto: piccolo scuotimento di camera e passa al bottone successivo
                 this.cameras.main.shake(200, 0.008);
                 this.bottoneAttuale++;
             }
 
-
+            // Una volta che tutti i bottoni sono posizionati, avvia l'ingresso del pulsante Login
             if (this.arrayDiBottoni[this.arrayDiBottoni.length - 1].x == 2760 ||
                 this.arrayDiBottoni[this.arrayDiBottoni.length - 1].x === 2740) {
                 this.btnsCanFall = false;
 
+                // Transizione elastica del login button
                 this.tweens.add({
                     targets: this.logInBtn,
                     y: 40,
@@ -523,7 +493,6 @@ export default class MainMenuScene extends Phaser.Scene {
                     duration: 600,
                     ease: "Cubic.Out",
                     onStart: () => {
-
                         setTimeout(() => {
                             this.time.delayedCall(600, () => {
                                 this.tweens.add({
@@ -548,28 +517,28 @@ export default class MainMenuScene extends Phaser.Scene {
                     }
                 });
 
-
-
+                // Abilita la caduta del giocatore e l'apparizione dell'HUD
                 setTimeout(() => {
                     this.personaggioPuoApparire = true;
                     this.barraGiocatorePuoApparire = true;
                 }, 200);
-
             }
         }
     }
 
+    /**
+     * Gestisce la simulazione fisica della caduta (landing) del giocatore sul terreno dell'arena,
+     * aggiornando dinamicamente la grandezza e opacità dell'ombra al suolo.
+     */
     personaggioCheAppare() {
         if (this.personaggioPuoApparire) {
             const groundY = 400;
             if (this.dominantRed.y < 300) {
                 this.dominantRed.y += 5;
 
-
-
+                // L'ombra rimane fissa sull'asse orizzontale e verticale del terreno
                 this.dominantRedShadow.x = this.dominantRed.x + 10;
-                this.dominantRedShadow.y = 300; // “terra” fissa
-
+                this.dominantRedShadow.y = 300;
 
                 const t = Phaser.Math.Clamp(
                     (this.dominantRed.y / groundY),
@@ -577,37 +546,40 @@ export default class MainMenuScene extends Phaser.Scene {
                     1
                 );
 
-                // più vicino al suolo → ombra più piccola e più scura
+                // Più il player si avvicina al suolo, più l'ombra si rimpicciolisce e scurisce
                 this.dominantRedShadow.setScale(2 - t * 1.4);
                 this.dominantRedShadow.setAlpha(0.01 + t * 0.3);
-
-
-
-
-
             } else {
+                // Atterrato: scuote la telecamera, cambia la texture in Landing e poi imposta lo stato Idle
                 this.personaggioPuoApparire = false;
                 this.personaggioPuoOscillare = true;
                 this.dominantRed.setTexture("dominantRedLanding");
                 this.dominantRedShadow.setTexture("dominantRedLanding");
                 this.cameras.main.shake(400, 0.008);
+                
                 setTimeout(() => {
                     this.dominantRed.setTexture("dominantRedStanding");
                     this.dominantRedShadow.setTexture("dominantRedStanding");
                     this.dominantRedPuoRespirare = true;
-                }, 400)
+                }, 400);
             }
         }
     }
 
+    /**
+     * Allinea i bottoni in caso di lievi discrepanze di pixel nel posizionamento X.
+     */
     BugsHandler() {
-        this.arrayDiBottoni.forEach(a => {
-            if (a.x === 2740) {
-                a.x = 2760;
+        this.arrayDiBottoni.forEach(btn => {
+            if (btn.x === 2740) {
+                btn.x = 2760;
             }
-        })
+        });
     }
 
+    /**
+     * Attiva l'animazione di respirazione a ciclo continuo quando il giocatore è a terra.
+     */
     DominantRedCheRespira() {
         if (this.dominantRedPuoRespirare) {
             this.dominantRed.play("dominantRedBreathing");
@@ -617,6 +589,10 @@ export default class MainMenuScene extends Phaser.Scene {
         }
     }
 
+    /**
+     * Alterna ogni 10 secondi l'animazione di respiro con una mossa acrobatica casuale
+     * (calcio/pugno a vuoto) per rendere il personaggio vivo durante l'attesa nel menu.
+     */
     DominantRedCheAspetta() {
         if (this.dominantRedStaAspettando) {
             setInterval(() => {
@@ -631,6 +607,9 @@ export default class MainMenuScene extends Phaser.Scene {
         }
     }
 
+    /**
+     * Rimuove il pulsante di Login se l'utente ha completato l'accesso con successo.
+     */
     eliminaBottoneDelLogIn() {
         if (localStorage.getItem("playerLogged") === "true" && this.logInBtn) {
             this.logInBtn.destroy();
@@ -638,15 +617,20 @@ export default class MainMenuScene extends Phaser.Scene {
         }
     }
 
-
+    /**
+     * Fa scorrere e apparire la barra HUD del profilo giocatore a fine caricamento.
+     */
     faiApparireBarraGiocatore() {
         if (this.barraGiocatorePuoApparire) {
+            // Animazione di slide-in per la barra grafica del giocatore
             this.tweens.add({
                 targets: this.barraGiocatore,
                 x: 2810,
                 alpha: 1,
                 duration: 500
             });
+            
+            // Crea il testo delle statistiche con stile retro-game pixelated
             this.nomeUtenteBarraGiocatore = this.add.text(
                 this.barraGiocatore.x - 30,
                 this.barraGiocatore.y - 5,
@@ -668,6 +652,8 @@ export default class MainMenuScene extends Phaser.Scene {
                     }
                 }
             ).setAlpha(0).setOrigin(0, 0.5);
+
+            // Animazione di slide-in parallela per la scritta delle statistiche
             this.tweens.add({
                 targets: this.nomeUtenteBarraGiocatore,
                 x: 2730,
@@ -678,15 +664,24 @@ export default class MainMenuScene extends Phaser.Scene {
             this.barraGiocatorePuoApparire = false;
             this.puoiAggiornareNomeUtente = true;
         }
-
     }
 
+    /**
+     * Sostituisce il testo di default "USER" con il nome utente e livello effettivi del player
+     * non appena viene effettuato il login e ricevuti i dati dal server.
+     * Cambia anche il bagliore in rosa fucsia.
+     */
     aggiornaNomeUtentePostLogIn() {
         if (window.player.username && this.puoiAggiornareNomeUtente) {
             const displayLevel = window.player.level !== undefined ? window.player.level : 1;
+            
+            // Aggiorna il testo su due linee
             this.nomeUtenteBarraGiocatore.setText(`${window.player.username.toUpperCase()}\nLV. ${displayLevel}`);
+            
+            // Applica la variazione di colore a stile caldo cyberpunk
             this.nomeUtenteBarraGiocatore.setColor("#ff007f");
             this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#ff007f", 5, false, true);
+            
             this.puoiAggiornareNomeUtente = false;
         }
     }
