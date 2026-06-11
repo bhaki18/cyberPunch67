@@ -9,7 +9,7 @@
 export default class PreloadScene extends Phaser.Scene {
     constructor() {
         super("PreloadScene");
-        
+
         // Tracciamento particelle e animazioni di ingresso/uscita
         this.parecelleSfondo;
         this.OggettiInPreloadScene = [];
@@ -43,6 +43,7 @@ export default class PreloadScene extends Phaser.Scene {
 
         // --- 2. AVVIO DEL CARICAMENTO DEGLI ASSET DI GIOCO (MAIN MENU, ARENE, PLAYER)
         this.loadMainMenu();
+        this.loadInventory();
 
         // --- 3. CREAZIONE DELLA BARRA DI CARICAMENTO GRAFICA (PHASER GRAPHICS)
         const x = this.cameras.main.centerX;
@@ -52,7 +53,7 @@ export default class PreloadScene extends Phaser.Scene {
         // Inizializza i due livelli grafici (background nero e fill colorato)
         this.backgroundLineaDiCaricamento = this.add.graphics().setDepth(1).setAlpha(0);
         this.fillLineaDiCaricamento = this.add.graphics().setDepth(2).setAlpha(0);
-        
+
         // Registra gli oggetti per le dissolvenze finali
         this.OggettiInPreloadScene.push(this.backgroundLineaDiCaricamento, this.fillLineaDiCaricamento);
         this.oggettiSoloInPreloadScene.push(this.backgroundLineaDiCaricamento, this.fillLineaDiCaricamento);
@@ -122,7 +123,7 @@ export default class PreloadScene extends Phaser.Scene {
             .setOrigin(0.5)
             .setAlpha(0)
             .setDepth(3);
-            
+
         this.OggettiInPreloadSceneAnimation2.push(this.textCliccaPerIniziare);
         this.oggettiSoloInPreloadScene.push(this.textCliccaPerIniziare);
 
@@ -142,14 +143,14 @@ export default class PreloadScene extends Phaser.Scene {
         const bg = this.add.sprite(400, 300, "sfondoPreloadScene")
             .setScale(9)
             .setDepth(-2);
-            
+
         // Setup del sistema di particelle spaziali mobili
         const particellaBg = [];
         const numeroDiParticelle = 25;
         for (let i = 0; i < numeroDiParticelle; i++) {
             const particella = this.add.image(
-                Phaser.Math.Between(1, 800), 
-                Phaser.Math.Between(1, 600), 
+                Phaser.Math.Between(1, 800),
+                Phaser.Math.Between(1, 600),
                 "particellaSfondo"
             )
                 .setScale(0.3)
@@ -177,9 +178,9 @@ export default class PreloadScene extends Phaser.Scene {
         this.parecelleSfondo.forEach(a => {
             this.OggettiInPreloadScene.push(a);
         });
-        
+
         this.OggettiInPreloadScene.push(bg);
-        
+
         // Imposta inizialmente a zero l'opacità di tutti gli elementi
         this.OggettiInPreloadScene.forEach(a => {
             a.setAlpha(this.alphaOggettiInPreloadScene);
@@ -261,7 +262,7 @@ export default class PreloadScene extends Phaser.Scene {
                 a.setAlpha(this.alphaOggettiInPreloadScene);
             });
             this.backgroundPreloadingScene.setAlpha(1); // Mantiene lo sfondo visibile
-            
+
             if (this.alphaOggettiInPreloadScene <= 0) {
                 this.scene.start("MainMenuScene");
             }
@@ -356,5 +357,11 @@ export default class PreloadScene extends Phaser.Scene {
             frameRate: 2,
             repeat: -1
         });
+    }
+
+    loadInventory() {
+
+        // sfondo della scene
+        this.load.image("inventoryBackground", "../assets/InventoryScene/inventoryBackground.png");
     }
 }

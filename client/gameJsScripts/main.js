@@ -25,26 +25,26 @@ import UpgradeScene from "./UpgradeScene.js";
 const config = {
     // Tipo di rendering: Phaser.AUTO sceglie automaticamente WebGL se supportato, altrimenti Canvas
     type: Phaser.AUTO,
-    
+
     // Dimensioni base del canvas di gioco (risoluzione logica interna)
     width: 800,
     height: 600,
-    
+
     // Disabilita l'antialias per preservare l'estetica pixel-art nitida e pulita
     pixelArt: true,
-    
+
     // Configurazione del target dei fotogrammi al secondo (FPS)
     fps: {
         target: 60,
         forceSetTimeOut: true
     },
-    
+
     // Ridimensionamento e centramento automatico del gioco all'interno della finestra del browser
     scale: {
         mode: Phaser.Scale.FIT, // Adatta il canvas alla finestra mantenendo le proporzioni (800x600)
         autoCenter: Phaser.Scale.CENTER_BOTH // Centra sia in orizzontale che in verticale
     },
-    
+
     // Configurazione del motore di fisica bidimensionale (Arcade Physics)
     physics: {
         default: "arcade",
@@ -53,7 +53,7 @@ const config = {
             debug: false       // Impostare su true per visualizzare i corpi fisici e le hitbox
         }
     },
-    
+
     // Elenco ordinato delle scene registrate nel motore di gioco.
     // La prima scena dell'array (BootScene) viene avviata automaticamente all'avvio.
     scene: [
