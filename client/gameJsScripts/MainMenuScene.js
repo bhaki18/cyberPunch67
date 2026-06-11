@@ -387,7 +387,7 @@ export default class MainMenuScene extends Phaser.Scene {
         const YInizialeBarraDelGiocatore = 550;
 
         this.barraGiocatore = this.add.sprite(XInizialeBarraDelGiocatore, YInizialeBarraDelGiocatore, "barraGiocatore")
-            .setAlpha(0).setScale(2);
+            .setAlpha(0).setScale(2.5);
 
 
 
@@ -410,6 +410,10 @@ export default class MainMenuScene extends Phaser.Scene {
         this.faiApparireBarraGiocatore();
         this.aggiornaNomeUtentePostLogIn();
 
+        // Muove lo sfondo spaziale per dare l'effetto di movimento
+        if (this.spaceBg) {
+            this.spaceBg.tilePositionX += 0.25;
+        }
 
     }
 
@@ -639,14 +643,34 @@ export default class MainMenuScene extends Phaser.Scene {
         if (this.barraGiocatorePuoApparire) {
             this.tweens.add({
                 targets: this.barraGiocatore,
-                x: 2780,
+                x: 2810,
                 alpha: 1,
                 duration: 500
             });
-            this.nomeUtenteBarraGiocatore = this.add.text(this.barraGiocatore.x - 30, this.barraGiocatore.y - 10, "user").setAlpha(0);
+            this.nomeUtenteBarraGiocatore = this.add.text(
+                this.barraGiocatore.x - 30,
+                this.barraGiocatore.y - 5,
+                "USER\nLV. 1",
+                {
+                    fontFamily: "'Press Start 2P', monospace",
+                    fontSize: "12px",
+                    lineSpacing: 4,
+                    color: "#00f0ff",
+                    stroke: "#000000",
+                    strokeThickness: 2,
+                    shadow: {
+                        offsetX: 0,
+                        offsetY: 0,
+                        color: "#00f0ff",
+                        blur: 3,
+                        stroke: false,
+                        fill: true
+                    }
+                }
+            ).setAlpha(0).setOrigin(0, 0.5);
             this.tweens.add({
                 targets: this.nomeUtenteBarraGiocatore,
-                x: 2700,
+                x: 2730,
                 alpha: 1,
                 duration: 500
             });
@@ -659,7 +683,10 @@ export default class MainMenuScene extends Phaser.Scene {
 
     aggiornaNomeUtentePostLogIn() {
         if (window.player.username && this.puoiAggiornareNomeUtente) {
-            this.nomeUtenteBarraGiocatore.setText(window.player.username);
+            const displayLevel = window.player.level !== undefined ? window.player.level : 1;
+            this.nomeUtenteBarraGiocatore.setText(`${window.player.username.toUpperCase()}\nLV. ${displayLevel}`);
+            this.nomeUtenteBarraGiocatore.setColor("#ff007f");
+            this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#ff007f", 5, false, true);
             this.puoiAggiornareNomeUtente = false;
         }
     }
