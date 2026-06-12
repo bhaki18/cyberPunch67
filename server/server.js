@@ -59,6 +59,8 @@ app.post("/auth/login", async (req, res) => {
 
     res.json({ token });
 
+    console.log("player loggato:" + token.username);
+
 
   } catch (err) {
     res.status(400).json({ error: err.message });

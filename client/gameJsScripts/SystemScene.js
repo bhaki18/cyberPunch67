@@ -14,7 +14,7 @@ export default class SystemScene extends Phaser.Scene {
     create() {
         // Reset iniziale dello stato di login sul browser per motivi di sicurezza ad ogni avvio
         localStorage.setItem("playerLogged", "false");
-        
+
         // Inizializza l'oggetto globale player associato all'istanza di window per l'accesso trasversale tra le scene
         window.player = { username: null };
 
@@ -32,5 +32,45 @@ export default class SystemScene extends Phaser.Scene {
                 this.game.scale.startFullscreen();
             }
         });
+
+
+        // bottone per tornare al menu da inventoryScene
+        this.btnTornaAlMenuInventoryScene = this.add.rectangle(
+            20,
+            20,
+            50,
+            50,
+            0xff0000
+        )
+            .setOrigin(0.5)
+            .setDepth(12)
+            .setVisible(false)
+            .setInteractive();
+
+        this.btnTornaAlMenuInventoryScene.on("pointerup", () => {
+            if (this.scene.isActive("InventoryScene")) {
+                this.scene.stop("InventoryScene");
+                this.scene.run("MainMenuScene");
+            }
+        });
+    }
+
+    update() {
+        this.creaBtnTornAlMenu();
+    }
+
+    creaBtnTornAlMenu() {
+        const active = this.scene.isActive("InventoryScene");
+
+        if (active) {
+            if (!this.btnTornaAlMenuInventoryScene.visible) {
+                this.scene.bringToTop();
+                this.btnTornaAlMenuInventoryScene.setVisible(true);
+            }
+        } else {
+            if (this.btnTornaAlMenuInventoryScene.visible) {
+                this.btnTornaAlMenuInventoryScene.setVisible(false);
+            }
+        }
     }
 }

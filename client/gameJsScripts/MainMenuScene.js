@@ -10,7 +10,7 @@
 export default class MainMenuScene extends Phaser.Scene {
     constructor() {
         super("MainMenuScene");
-        
+
         // --- PROPRIETÀ DELLA MAPPA E DEL TILESET
         this.mapMainMenu;
         this.groundLayerMainMenu;
@@ -28,13 +28,38 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottoneAttuale = 0;    // Indice per far scendere i bottoni in sequenza
         this.arrayDiBottoni = [];
         this.btnsCanFall = false;
-        
+
         // --- STATO DEL PERSONAGGIO (DOMINANT RED)
         this.personaggioPuoApparire = false;
         this.personaggioPuoOscillare = false;
         this.dominantRedPuoRespirare = false;
         this.dominantRedStaAspettando = false;
-        
+
+        // --- STATO DELLA BARRA GIOCATORE HUD
+        this.barraGiocatorePuoApparire = false;
+        this.puoiAggiornareNomeUtente = false;
+    }
+
+    init() {
+        // --- PROPRIETÀ DELLA MAPPA E DEL TILESET
+        this.arrayDiLayer = [];
+
+        // --- STATO DELLA TELECAMERA E SCROLLING
+        this.cameraSpeed = 0;
+        this.phase = "ACCELERATE";
+        this.cameraCanMove = false;
+
+        // --- GESTIONE DEI PULSANTI
+        this.bottoneAttuale = 0;
+        this.arrayDiBottoni = [];
+        this.btnsCanFall = false;
+
+        // --- STATO DEL PERSONAGGIO (DOMINANT RED)
+        this.personaggioPuoApparire = false;
+        this.personaggioPuoOscillare = false;
+        this.dominantRedPuoRespirare = false;
+        this.dominantRedStaAspettando = false;
+
         // --- STATO DELLA BARRA GIOCATORE HUD
         this.barraGiocatorePuoApparire = false;
         this.puoiAggiornareNomeUtente = false;
@@ -125,7 +150,7 @@ export default class MainMenuScene extends Phaser.Scene {
                 ease: "Sine.easeOut"
             });
         });
-        
+
         // Ripristino dello stato quando il mouse esce dal pulsante online
         this.bottonePlayOnline.on("pointerout", () => {
             this.bottonePlayOnline.setFrame(0);
@@ -486,36 +511,40 @@ export default class MainMenuScene extends Phaser.Scene {
                 this.btnsCanFall = false;
 
                 // Transizione elastica del login button
-                this.tweens.add({
-                    targets: this.logInBtn,
-                    y: 40,
-                    alpha: 1,
-                    duration: 600,
-                    ease: "Cubic.Out",
-                    onStart: () => {
-                        setTimeout(() => {
-                            this.time.delayedCall(600, () => {
-                                this.tweens.add({
-                                    targets: this.logInBtn,
-                                    scaleX: 1.35,
-                                    scaleY: 0.65,
-                                    duration: 120,
-                                    ease: "Quad.Out",
-                                    yoyo: true
-                                });
+                if (this.logInBtn) {
+                    this.tweens.add({
+                        targets: this.logInBtn,
+                        y: 40,
+                        alpha: 1,
+                        duration: 600,
+                        ease: "Cubic.Out",
+                        onStart: () => {
+                            setTimeout(() => {
+                                this.time.delayedCall(600, () => {
+                                    if (this.logInBtn) {
+                                        this.tweens.add({
+                                            targets: this.logInBtn,
+                                            scaleX: 1.35,
+                                            scaleY: 0.65,
+                                            duration: 120,
+                                            ease: "Quad.Out",
+                                            yoyo: true
+                                        });
 
-                                this.tweens.add({
-                                    targets: this.logInBtn,
-                                    scaleX: 0.95,
-                                    scaleY: 1.05,
-                                    duration: 180,
-                                    delay: 120,
-                                    ease: "Elastic.Out(1, 0.4)"
+                                        this.tweens.add({
+                                            targets: this.logInBtn,
+                                            scaleX: 0.95,
+                                            scaleY: 1.05,
+                                            duration: 180,
+                                            delay: 120,
+                                            ease: "Elastic.Out(1, 0.4)"
+                                        });
+                                    }
                                 });
-                            });
-                        }, 600);
-                    }
-                });
+                            }, 600);
+                        }
+                    });
+                }
 
                 // Abilita la caduta del giocatore e l'apparizione dell'HUD
                 setTimeout(() => {
@@ -556,7 +585,7 @@ export default class MainMenuScene extends Phaser.Scene {
                 this.dominantRed.setTexture("dominantRedLanding");
                 this.dominantRedShadow.setTexture("dominantRedLanding");
                 this.cameras.main.shake(400, 0.008);
-                
+
                 setTimeout(() => {
                     this.dominantRed.setTexture("dominantRedStanding");
                     this.dominantRedShadow.setTexture("dominantRedStanding");
@@ -595,14 +624,22 @@ export default class MainMenuScene extends Phaser.Scene {
      */
     DominantRedCheAspetta() {
         if (this.dominantRedStaAspettando) {
-            setInterval(() => {
-                this.dominantRed.play("dominantRedWaitingR");
-                this.dominantRedShadow.play("dominantRedWaitingR");
-                setTimeout(() => {
-                    this.dominantRed.play("dominantRedBreathing");
-                    this.dominantRedShadow.play("dominantRedBreathing");
-                }, 3800);
-            }, 10000);
+            this.waitingTimer = this.time.addEvent({
+                delay: 10000,
+                callback: () => {
+                    if (this.dominantRed && this.dominantRed.active) {
+                        this.dominantRed.play("dominantRedWaitingR");
+                        this.dominantRedShadow.play("dominantRedWaitingR");
+                        this.time.delayedCall(3800, () => {
+                            if (this.dominantRed && this.dominantRed.active) {
+                                this.dominantRed.play("dominantRedBreathing");
+                                this.dominantRedShadow.play("dominantRedBreathing");
+                            }
+                        });
+                    }
+                },
+                loop: true
+            });
             this.dominantRedStaAspettando = false;
         }
     }
@@ -629,7 +666,7 @@ export default class MainMenuScene extends Phaser.Scene {
                 alpha: 1,
                 duration: 500
             });
-            
+
             // Crea il testo delle statistiche con stile retro-game pixelated
             this.nomeUtenteBarraGiocatore = this.add.text(
                 this.barraGiocatore.x - 30,
@@ -674,14 +711,14 @@ export default class MainMenuScene extends Phaser.Scene {
     aggiornaNomeUtentePostLogIn() {
         if (window.player.username && this.puoiAggiornareNomeUtente) {
             const displayLevel = window.player.level !== undefined ? window.player.level : 1;
-            
+
             // Aggiorna il testo su due linee
             this.nomeUtenteBarraGiocatore.setText(`${window.player.username.toUpperCase()}\nLV. ${displayLevel}`);
-            
+
             // Applica la variazione di colore a stile caldo cyberpunk
             this.nomeUtenteBarraGiocatore.setColor("#ff007f");
             this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#ff007f", 5, false, true);
-            
+
             this.puoiAggiornareNomeUtente = false;
         }
     }
