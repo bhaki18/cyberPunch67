@@ -7,6 +7,8 @@
  * la caduta controllata del personaggio del giocatore con ombra proiettata,
  * e il rendering dei dati del giocatore loggato (nome e livello) con font pixel-art.
  */
+
+import caricaPersonaggiTot from "../modules/personaggi.js";
 export default class MainMenuScene extends Phaser.Scene {
     constructor() {
         super("MainMenuScene");
@@ -70,6 +72,12 @@ export default class MainMenuScene extends Phaser.Scene {
      * istanzia i bottoni con i loro eventi interattivi e avvia le timeline.
      */
     create() {
+
+        // carica i personaggi totali
+        this.personaggiTot = caricaPersonaggiTot();
+        this.livelloPlayer = window.player.level !== undefined ? window.player.level : 1;
+
+
         const { width, height } = this.scale;
 
         // --- 1. SETUP TILEMAP E STRUTTURA SCENICA
@@ -269,7 +277,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bottoneInventory.on("pointerup", () => {
             this.bottoneInventory.setFrame(1);
             // Avvio della scena dell'inventario del giocatore
-            this.scene.start("InventoryScene");
+            this.scene.start("InventoryScene", { personaggiTot: this.personaggiTot, livello: this.livelloPlayer });
         });
 
         // --- PULSANTE INFORMAZIONI (INFO)
@@ -711,6 +719,7 @@ export default class MainMenuScene extends Phaser.Scene {
     aggiornaNomeUtentePostLogIn() {
         if (window.player.username && this.puoiAggiornareNomeUtente) {
             const displayLevel = window.player.level !== undefined ? window.player.level : 1;
+            this.livelloPlayer = window.player.level !== undefined ? window.player.level : 1;
 
             // Aggiorna il testo su due linee
             this.nomeUtenteBarraGiocatore.setText(`${window.player.username.toUpperCase()}\nLV. ${displayLevel}`);
@@ -722,4 +731,6 @@ export default class MainMenuScene extends Phaser.Scene {
             this.puoiAggiornareNomeUtente = false;
         }
     }
+
+
 }

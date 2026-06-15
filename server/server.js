@@ -59,7 +59,7 @@ app.post("/auth/login", async (req, res) => {
 
     res.json({ token });
 
-    console.log("player loggato:" + token.username);
+
 
 
   } catch (err) {

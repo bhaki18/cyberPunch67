@@ -11,10 +11,17 @@ export default class InventoryScene extends Phaser.Scene {
 
 
         this.inventoryBackground;
+        this.arrayDiPersonaggi = [];
     }
     /**
      * Inizializzazione della griglia degli oggetti dell'inventario.
      */
+
+    init(data) {
+
+        this.personaggiTot = data.personaggiTot ? [...data.personaggiTot] : [];
+        this.livelloPlayer = data.livello;
+    }
     create() {
         this.minY = -768;
         this.maxY = 0;
@@ -26,6 +33,49 @@ export default class InventoryScene extends Phaser.Scene {
             0,
             "inventoryBackground"
         ).setOrigin(0.5, 0);
+
+
+        // CONTAINER DI COSE DA SCROLLARE
+        this.inventoryContainer = this.add.container(0, 0);
+        this.inventoryContainer.add(this.inventoryBackground);
+
+        this.framesInventory = [];
+
+        for (let i = 0; i < this.personaggiTot.length; i++) {
+            let col = i % 3;
+            let row = Math.floor(i / 3);
+
+            let frame = this.add.sprite(
+                120 + col * 200 + 75,
+                200 + row * 270,
+                "framePgInventory"
+            ).setScale(4.5);
+
+            this.framesInventory.push(frame);
+            this.inventoryContainer.add(frame);
+
+            frame.setInteractive({ pixelPerfect: true });
+
+            frame.on("pointerover", () => {
+                this.tweens.add({
+                    targets: frame,
+                    scale: 4.7,
+                    duration: 200
+                });
+            });
+
+            frame.on("pointerout", () => {
+                this.tweens.add({
+                    targets: frame,
+                    scale: 4.5,
+                    duration: 200
+                });
+            });
+        }
+
+
+
+
 
         this.scrollY = 0;
 
@@ -41,14 +91,17 @@ export default class InventoryScene extends Phaser.Scene {
 
         });
 
+
+
+
     }
     /**
      * Ciclo di aggiornamento.
      */
     update() {
         // TODO: Gestione di animazioni di hover/selezione degli oggetti dell'inventario.
-        this.inventoryBackground.y = Phaser.Math.Linear(
-            this.inventoryBackground.y,
+        this.inventoryContainer.y = Phaser.Math.Linear(
+            this.inventoryContainer.y,
             this.scrollY,
             0.15
         );

@@ -363,5 +363,8 @@ export default class PreloadScene extends Phaser.Scene {
 
         // sfondo della scene
         this.load.image("inventoryBackground", "../assets/InventoryScene/inventoryBackground.png");
+
+        // frame dei personaggi nell'inventario 
+        this.load.image("framePgInventory", "../assets/InventoryScene/frameInventoryCharacters.png");
     }
 }
