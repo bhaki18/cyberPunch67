@@ -50,9 +50,10 @@ export default class SystemScene extends Phaser.Scene {
         this.btnTornaAlMenuInventoryScene.on("pointerup", () => {
             if (this.scene.isActive("InventoryScene")) {
                 this.scene.stop("InventoryScene");
-                this.scene.run("MainMenuScene");
+                this.scene.wake("MainMenuScene");
             }
         });
+
     }
 
     update() {

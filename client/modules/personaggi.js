@@ -56,29 +56,8 @@ export default function caricaPersonaggiTot() {
     const HellbyteUnit = new Personaggio({ nome: "Hellbyte Unit" });
     const AdminAdp = new Personaggio({ nome: "Admin ADP" });
 
-    // DA RIMUOVERE
-    let arra = [];
-    for (let i = 0; i < 9; i++) {
-        arra[i] = i;
-    }
-    // FIN QUI
-
-
-
-
-
 
     const pgs = [];
-
-
-
-    // DA RIMUOVERE
-    arra.forEach(a => {
-        let b = new Personaggio();
-        pgs.push(b);
-    })
-    // FIN QUI
-
 
 
     pgs.push(DominantRed, KyraMist, ChromeBlack, ScarletNova, SYNDelta, HellbyteUnit, AdminAdp);

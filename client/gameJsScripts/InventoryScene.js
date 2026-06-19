@@ -23,21 +23,21 @@ export default class InventoryScene extends Phaser.Scene {
         this.livelloPlayer = data.livello;
     }
     create() {
-        this.minY = -768;
+        this.minY = -766;
         this.maxY = 0;
 
         const W = 800;
 
         this.inventoryBackground = this.add.sprite(
             W / 2,
-            0,
+            -this.minY / 2 - 50,
             "inventoryBackground"
-        ).setOrigin(0.5, 0);
+        ).setOrigin(0.5);
 
 
         // CONTAINER DI COSE DA SCROLLARE
         this.inventoryContainer = this.add.container(0, 0);
-        this.inventoryContainer.add(this.inventoryBackground);
+        // this.inventoryContainer.add(this.inventoryBackground);
 
         this.framesInventory = [];
 

@@ -132,6 +132,17 @@ export default class MainMenuScene extends Phaser.Scene {
             this.cameraCanMove = true;
         }, 200);
 
+        // --- LISTENER DI RISVEGLIO (wake): aggiorna i dati player senza ricreare la scena
+        this.events.on("wake", () => {
+            if (window.player.username && this.nomeUtenteBarraGiocatore) {
+                const displayLevel = window.player.level !== undefined ? window.player.level : 1;
+                this.livelloPlayer = displayLevel;
+                this.nomeUtenteBarraGiocatore.setText(`${window.player.username.toUpperCase()}\nLV. ${displayLevel}`);
+                this.nomeUtenteBarraGiocatore.setColor("#ff007f");
+                this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#ff007f", 5, false, true);
+            }
+        });
+
         // --- 3. CREAZIONE E CONFIGURAZIONE DEI BOTTONI INTERATTIVI DEL MENU
         const xBtn = 3600;      // Coordinata X iniziale (fuori dallo schermo destro)
         const yBtn = 200;       // Coordinata Y iniziale per il primo bottone
@@ -276,8 +287,9 @@ export default class MainMenuScene extends Phaser.Scene {
 
         this.bottoneInventory.on("pointerup", () => {
             this.bottoneInventory.setFrame(1);
-            // Avvio della scena dell'inventario del giocatore
-            this.scene.start("InventoryScene", { personaggiTot: this.personaggiTot, livello: this.livelloPlayer });
+            // Sospende MainMenu e avvia InventoryScene (così al ritorno riprende da dove era)
+            this.scene.sleep("MainMenuScene");
+            this.scene.launch("InventoryScene", { personaggiTot: this.personaggiTot, livello: this.livelloPlayer });
         });
 
         // --- PULSANTE INFORMAZIONI (INFO)
@@ -324,6 +336,9 @@ export default class MainMenuScene extends Phaser.Scene {
 
         this.bottoneInfo.on("pointerup", () => {
             this.bottoneInfo.setFrame(1);
+            // Sospende MainMenu e avvia InfoScene (così al ritorno riprende da dove era)
+            this.scene.sleep("MainMenuScene");
+            this.scene.launch("InfoScene");
         });
 
         // --- 4. DISPOSIZIONE E ANIMAZIONE CONTINUA DEI BOTTONI
