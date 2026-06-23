@@ -47,6 +47,20 @@ export default class SystemScene extends Phaser.Scene {
             .setVisible(false)
             .setInteractive();
 
+        // freccia bianca
+        this.frecciaTornaAlMenuInventoryScene = this.add.graphics()
+            .setDepth(13)
+            .setVisible(false);
+
+        this.frecciaTornaAlMenuInventoryScene.lineStyle(5, 0xffffff);
+
+        // corpo della freccia
+        this.frecciaTornaAlMenuInventoryScene.lineBetween(30, 20, 10, 20);
+
+        // punta
+        this.frecciaTornaAlMenuInventoryScene.lineBetween(10, 20, 18, 12);
+        this.frecciaTornaAlMenuInventoryScene.lineBetween(10, 20, 18, 28);
+
         this.btnTornaAlMenuInventoryScene.on("pointerup", () => {
             if (this.scene.isActive("InventoryScene")) {
                 this.scene.stop("InventoryScene");
@@ -67,10 +81,12 @@ export default class SystemScene extends Phaser.Scene {
             if (!this.btnTornaAlMenuInventoryScene.visible) {
                 this.scene.bringToTop();
                 this.btnTornaAlMenuInventoryScene.setVisible(true);
+                this.frecciaTornaAlMenuInventoryScene.setVisible(true);
             }
         } else {
             if (this.btnTornaAlMenuInventoryScene.visible) {
                 this.btnTornaAlMenuInventoryScene.setVisible(false);
+                this.frecciaTornaAlMenuInventoryScene.setVisible(false);
             }
         }
     }

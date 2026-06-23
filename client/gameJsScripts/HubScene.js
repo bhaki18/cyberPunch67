@@ -10,6 +10,10 @@ export default class HubScene extends Phaser.Scene {
         super("HubScene");
     }
 
+    init(data) {
+        this.livelloPlayer = data.livelloPlayer;
+        this.modalita = data.modalita;
+    }
     /**
      * Inizializzazione della grafica e delle interazioni dell'Hub.
      */
@@ -23,4 +27,6 @@ export default class HubScene extends Phaser.Scene {
     update() {
         // TODO: Inserire controlli dinamici o aggiornamenti delle notifiche del server.
     }
+
+
 }

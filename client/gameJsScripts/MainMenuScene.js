@@ -25,6 +25,12 @@ export default class MainMenuScene extends Phaser.Scene {
         this.phase = "ACCELERATE"; // Fasi: ACCELERATE -> CONSTANT -> DECCELERATE -> STOP
         this.arenaStartX = 2800;    // Coordinata X finale dove si posiziona l'arena
         this.cameraCanMove = false;
+        this.cameraCanMoveY = false;
+        this.phaseY = "ACCELERATE";
+
+        // animazioni di avvio
+        this.animationPlayOfflineCanStart = false;
+        this.animationPlayOnlineCanStart = false;
 
         // --- GESTIONE DEI PULSANTI
         this.bottoneAttuale = 0;    // Indice per far scendere i bottoni in sequenza
@@ -50,6 +56,8 @@ export default class MainMenuScene extends Phaser.Scene {
         this.cameraSpeed = 0;
         this.phase = "ACCELERATE";
         this.cameraCanMove = false;
+        this.cameraCanMoveY = false;
+        this.phaseY = "ACCELERATE";
 
         // --- GESTIONE DEI PULSANTI
         this.bottoneAttuale = 0;
@@ -195,6 +203,7 @@ export default class MainMenuScene extends Phaser.Scene {
 
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
+            this.animationPlayOnlineCanStart = true;
         });
 
         // --- PULSANTE PLAY OFFLINE
@@ -241,6 +250,9 @@ export default class MainMenuScene extends Phaser.Scene {
 
         this.bottonePlayOffline.on("pointerup", () => {
             this.bottonePlayOffline.setFrame(1);
+            // this.scene.start("HubScene", { modalita: "offline", livello: this.livelloPlayer });
+            this.animationPlayOfflineCanStart = true;
+
         });
 
         // --- PULSANTE INVENTARIO
@@ -432,6 +444,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.eliminaBottoneDelLogIn();    // Ritiro del pulsante Login se l'utente è già loggato
         this.faiApparireBarraGiocatore(); // Scivolamento della barra HUD
         this.aggiornaNomeUtentePostLogIn(); // Aggiornamento scritte nome e livello post-login
+        this.animazioneToHub();
 
         // Muove lo sfondo spaziale per dare l'effetto di movimento
         if (this.spaceBg) {
@@ -744,6 +757,68 @@ export default class MainMenuScene extends Phaser.Scene {
             this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#ff007f", 5, false, true);
 
             this.puoiAggiornareNomeUtente = false;
+        }
+    }
+
+    animazioneToHub() {
+        if (this.animationPlayOfflineCanStart || this.animationPlayOnlineCanStart) {
+            // Se la transizione Y non è ancora iniziata, la attiviamo resettando la velocità
+            if (!this.cameraCanMoveY && this.phaseY !== "STOP") {
+                this.cameraCanMoveY = true;
+                this.cameraSpeed = 0;
+            }
+
+            const TileLimitY = -1500;
+
+            this.arrayDiBottoni.forEach(b => {
+                b.disableInteractive();
+            });
+
+            const cam = this.cameras.main;
+            const distance = cam.scrollY - TileLimitY;
+
+            if (!this.cameraCanMoveY) return;
+
+            // FASE ACCELERATE
+            if (this.phaseY === "ACCELERATE") {
+                this.cameraSpeed += 0.5;
+                if (this.cameraSpeed >= 30) {
+                    this.cameraSpeed = 30;
+                    this.phaseY = "CONSTANT";
+                }
+            }
+            // FASE CONSTANT
+            else if (this.phaseY === "CONSTANT") {
+                this.cameraSpeed = 30;
+                if (distance < 500) {
+                    this.phaseY = "DECCELERATE";
+                }
+            }
+            // FASE DECCELERATE
+            else if (this.phaseY === "DECCELERATE") {
+                this.cameraSpeed *= 0.95;
+                if (this.cameraSpeed < 2) {
+                    this.cameraSpeed = 2;
+                }
+                if (distance < 200) {
+                    this.phaseY = "STOP";
+                }
+            }
+            // FASE STOP
+            else if (this.phaseY === "STOP") {
+                this.cameraSpeed = 0;
+                this.cameraCanMoveY = false;
+                
+                setTimeout(() => {
+                    const modalitaGioco = this.animationPlayOnlineCanStart ? "online" : "offline";
+                    this.animationPlayOfflineCanStart = false;
+                    this.animationPlayOnlineCanStart = false;
+                    this.scene.start("HubScene", { modalita: modalitaGioco, livelloPlayer: this.livelloPlayer });
+                }, 300);
+                return;
+            }
+
+            cam.scrollY -= this.cameraSpeed;
         }
     }
 
