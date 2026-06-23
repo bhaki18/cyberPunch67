@@ -6,6 +6,7 @@
  * Mostra a schermo una barra di avanzamento dinamica con effetti di bagliore (glow)
  * e testi descrittivi dello stato dell'inizializzazione del sistema.
  */
+import caricaPersonaggiTot from "../modules/personaggi.js";
 export default class PreloadScene extends Phaser.Scene {
     constructor() {
         super("PreloadScene");
@@ -366,5 +367,18 @@ export default class PreloadScene extends Phaser.Scene {
 
         // frame dei personaggi nell'inventario 
         this.load.image("framePgInventory", "../assets/InventoryScene/frameInventoryCharacters.png");
+
+        this.loadPersonaggi();
+    }
+
+    loadPersonaggi() {
+        this.personaggi = caricaPersonaggiTot();
+
+        this.personaggi.forEach(personaggio => {
+            this.load.image(personaggio.nome, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}.png`);
+        });
+
+
+
     }
 }

@@ -11,7 +11,8 @@ export default function caricaPersonaggiTot() {
             nomeSuperAttack = "super attacco",
             danniSuperAttakc = 100,
             livelloDiUnlock = 10,
-            descrizione = "questo è un personaggio"
+            descrizione = "questo è un personaggio",
+            nomeImgRef = "personaggio"
         } = {}) {
             this.nome = nome;
             this.hp = hp;
@@ -23,6 +24,7 @@ export default function caricaPersonaggiTot() {
             this.danniSuperAttakc = danniSuperAttakc;
             this.livelloDiUnlock = livelloDiUnlock;
             this.descrizione = descrizione;
+            this.nomeImgRef = nomeImgRef;
         }
     }
 
@@ -30,7 +32,7 @@ export default function caricaPersonaggiTot() {
     const DominantRed = new Personaggio(
         {
             nome: "Dominant Red",
-            hp: 100,
+            hp: 1000,
             nomeMossa1: "CyberPush",
             danniMossa1: 25,
             nomeMossa2: "CyberKick",
@@ -38,7 +40,8 @@ export default function caricaPersonaggiTot() {
             nomeSuperAttack: "Raggio elettromagnetico",
             danniSuperAttakc: 300,
             livelloDiUnlock: 1,
-            descrizione: "Dominant Red è un cyborg venuto da un pianeta futuristico dove la tecnologia si è evoluta 1000 anni oltre a quella della terra"
+            descrizione: "Dominant Red è un cyborg venuto da un pianeta futuristico dove la tecnologia si è evoluta 1000 anni oltre a quella della terra",
+            nomeImgRef: "dominantRed"
         });
 
 
@@ -47,14 +50,15 @@ export default function caricaPersonaggiTot() {
         {
             nome: "Kyra Mist",
             livelloDiUnlock: 1,
+            nomeImgRef: "kyraMist"
         }
     )
 
-    const ChromeBlack = new Personaggio({ nome: "Chrome Black" });
-    const ScarletNova = new Personaggio({ nome: "Scarket Nova" });
-    const SYNDelta = new Personaggio({ nome: "SYNDelta" });
-    const HellbyteUnit = new Personaggio({ nome: "Hellbyte Unit" });
-    const AdminAdp = new Personaggio({ nome: "Admin ADP" });
+    const ChromeBlack = new Personaggio({ nome: "Chrome Black", nomeImgRef: "chromeBlack" });
+    const ScarletNova = new Personaggio({ nome: "Scarket Nova", nomeImgRef: "scarletNova" });
+    const SYNDelta = new Personaggio({ nome: "SYNDelta", nomeImgRef: "SYNDelta" });
+    const HellbyteUnit = new Personaggio({ nome: "Hellbyte Unit", nomeImgRef: "HellbyteUnit" });
+    const AdminAdp = new Personaggio({ nome: "Admin ADP", nomeImgRef: "AdminAdp" });
 
 
     const pgs = [];

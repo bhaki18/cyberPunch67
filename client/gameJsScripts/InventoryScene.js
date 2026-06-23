@@ -21,6 +21,23 @@ export default class InventoryScene extends Phaser.Scene {
 
         this.personaggiTot = data.personaggiTot ? [...data.personaggiTot] : [];
         this.livelloPlayer = data.livello;
+
+
+        this.personaggiSbloccati = this.personaggiTot.filter(pg => {
+            if (pg.livelloDiUnlock <= data.livello) return pg;
+        });
+
+
+        this.personaggiNonSbloccati = this.personaggiTot.filter(pg => {
+            if (pg.livelloDiUnlock > data.livello) return pg;
+        });
+
+        console.log("personaggi totali:");
+        console.table(this.personaggiTot);
+        console.log("personaggi sbloccati:");
+        console.table(this.personaggiSbloccati);
+        console.log("personaggi Non sbloccati:");
+        console.table(this.personaggiNonSbloccati); /*stranamente funziona tutto alla prima botta*/
     }
     create() {
         this.minY = -766;
@@ -40,6 +57,8 @@ export default class InventoryScene extends Phaser.Scene {
         // this.inventoryContainer.add(this.inventoryBackground);
 
         this.framesInventory = [];
+        this.personaggiInventory = [];
+
 
         for (let i = 0; i < this.personaggiTot.length; i++) {
             let col = i % 3;
@@ -51,15 +70,35 @@ export default class InventoryScene extends Phaser.Scene {
                 "framePgInventory"
             ).setScale(4.5);
 
+            let personaggioOverFrame = this.add.sprite(
+                frame.x,
+                frame.y - 20,
+                this.personaggiTot[i].nome
+            ).setScale(2.5);
+
+            if (this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer) {
+                frame.setTint(0x111111);
+                personaggioOverFrame.setTint(0x111111);
+            }
+
+            this.personaggiInventory.push(personaggioOverFrame);
             this.framesInventory.push(frame);
             this.inventoryContainer.add(frame);
+            this.inventoryContainer.add(personaggioOverFrame);
 
             frame.setInteractive({ pixelPerfect: true });
+
 
             frame.on("pointerover", () => {
                 this.tweens.add({
                     targets: frame,
                     scale: 4.7,
+                    duration: 200
+                });
+
+                this.tweens.add({
+                    targets: personaggioOverFrame,
+                    scale: 2.6,
                     duration: 200
                 });
             });
@@ -70,7 +109,15 @@ export default class InventoryScene extends Phaser.Scene {
                     scale: 4.5,
                     duration: 200
                 });
+
+                this.tweens.add({
+                    targets: personaggioOverFrame,
+                    scale: 2.5,
+                    duration: 200
+                });
             });
+
+
         }
 
 

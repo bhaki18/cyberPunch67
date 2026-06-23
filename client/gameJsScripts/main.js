@@ -4,6 +4,7 @@
  * Inizializza la configurazione globale di Phaser e carica le scene di gioco.
  */
 
+
 // Importazione di tutte le scene di gioco
 import SystemScene from "./SystemScene.js";
 import BootScene from "./BootScene.js";
