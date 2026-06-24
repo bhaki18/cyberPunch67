@@ -14,6 +14,7 @@ export default class ArenaScene extends Phaser.Scene {
         this.modalita = data.modalita;
         this.personaggioPlayer = data.personaggioSelezionato;
 
+
     }
 
     /**
@@ -29,5 +30,19 @@ export default class ArenaScene extends Phaser.Scene {
      */
     update() {
         // TODO: Aggiungere logica di aggiornamento degli input, update della fisica dei personaggi e collisioni di attacco.
+    }
+
+    offlineModGameCreate() {
+        this.schermataDiCaricamentoOfflineMod();
+
+
+    }
+
+    schermataDiCaricamentoOfflineMod() {
+
+    }
+
+    creaArenaRandom() {
+
     }
 }
