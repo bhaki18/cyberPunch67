@@ -32,6 +32,24 @@ export default class BootScene extends Phaser.Scene {
         // Caricamento dei loghi introduttivi
         this.load.image("logoDelGioco", "../assets/BootScene/logoDelGioco.png");
         this.load.image("logoDiPhaserJS", "../assets/BootScene/logoDiPhaserJS.png");
+
+
+        // --- 1. CARICAMENTO DELLE RISORSE LOCALI DELLA SCHERMATA DI PRELOAD
+        // Sfondo animato in formato spritesheet
+        this.load.spritesheet(
+            "sfondoPreloadScene",
+            "../assets/PreloadScene/sfondoPreloadScene.png",
+            {
+                frameWidth: 128,
+                frameHeight: 64
+            }
+        );
+
+        // Immagine delle singole particelle a schermo
+        this.load.image("particellaSfondo", "../assets/PreloadScene/particellaPreloadScene.png");
+
+        // Sfondo stellato a ripetizione
+        this.load.image("space", "../assets/PreloadScene/space.png");
     }
 
     /**

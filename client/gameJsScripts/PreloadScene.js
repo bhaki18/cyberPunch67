@@ -28,19 +28,7 @@ export default class PreloadScene extends Phaser.Scene {
      * Fase di caricamento degli asset e configurazione della barra di caricamento visiva.
      */
     preload() {
-        // --- 1. CARICAMENTO DELLE RISORSE LOCALI DELLA SCHERMATA DI PRELOAD
-        // Sfondo animato in formato spritesheet
-        this.load.spritesheet(
-            "sfondoPreloadScene",
-            "../assets/PreloadScene/sfondoPreloadScene.png",
-            {
-                frameWidth: 128,
-                frameHeight: 64
-            }
-        );
 
-        // Immagine delle singole particelle a schermo
-        this.load.image("particellaSfondo", "../assets/PreloadScene/particellaPreloadScene.png");
 
         // --- 2. AVVIO DEL CARICAMENTO DEGLI ASSET DI GIOCO (MAIN MENU, ARENE, PLAYER)
         this.loadMainMenu();
@@ -281,8 +269,7 @@ export default class PreloadScene extends Phaser.Scene {
         );
         this.load.image("tilesArenaFluttuante", "../assets/arenaFluttuante/spritesheet.png");
 
-        // Sfondo stellato a ripetizione
-        this.load.image("space", "../assets/PreloadScene/space.png");
+
 
         // --- CARICAMENTO SPRITESHEETS DEI BOTTONI DEL MENU PRINCIPALE
         // Pulsante Gioca Offline (Stato Normale, Hover, Clicked)
