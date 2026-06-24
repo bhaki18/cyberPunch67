@@ -32,12 +32,12 @@ export default class InventoryScene extends Phaser.Scene {
             if (pg.livelloDiUnlock > data.livello) return pg;
         });
 
-        console.log("personaggi totali:");
-        console.table(this.personaggiTot);
-        console.log("personaggi sbloccati:");
-        console.table(this.personaggiSbloccati);
-        console.log("personaggi Non sbloccati:");
-        console.table(this.personaggiNonSbloccati); /*stranamente funziona tutto alla prima botta*/
+        // console.log("personaggi totali:");
+        // console.table(this.personaggiTot);
+        // console.log("personaggi sbloccati:");
+        // console.table(this.personaggiSbloccati);
+        // console.log("personaggi Non sbloccati:");
+        // console.table(this.personaggiNonSbloccati); /*stranamente funziona tutto alla prima botta*/
     }
     create() {
         this.minY = -766;

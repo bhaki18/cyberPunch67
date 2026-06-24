@@ -33,6 +33,7 @@ export default class PreloadScene extends Phaser.Scene {
         // --- 2. AVVIO DEL CARICAMENTO DEGLI ASSET DI GIOCO (MAIN MENU, ARENE, PLAYER)
         this.loadMainMenu();
         this.loadInventory();
+        this.loadHub();
 
         // --- 3. CREAZIONE DELLA BARRA DI CARICAMENTO GRAFICA (PHASER GRAPHICS)
         const x = this.cameras.main.centerX;
@@ -367,5 +368,9 @@ export default class PreloadScene extends Phaser.Scene {
 
 
 
+    }
+
+    loadHub() {
+        this.load.image("tastoPronto", "../assets/HubScene/tastoReady.png");
     }
 }

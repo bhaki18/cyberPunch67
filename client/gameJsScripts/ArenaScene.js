@@ -10,6 +10,12 @@ export default class ArenaScene extends Phaser.Scene {
         super("ArenaScene");
     }
 
+    init(data) {
+        this.modalita = data.modalita;
+        this.personaggioPlayer = data.personaggioSelezionato;
+
+    }
+
     /**
      * Inizializzazione degli elementi grafici e fisici dell'arena.
      */
