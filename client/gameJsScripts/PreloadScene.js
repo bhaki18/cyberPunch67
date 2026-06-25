@@ -34,6 +34,7 @@ export default class PreloadScene extends Phaser.Scene {
         this.loadMainMenu();
         this.loadInventory();
         this.loadHub();
+        this.loadArena();
 
         // --- 3. CREAZIONE DELLA BARRA DI CARICAMENTO GRAFICA (PHASER GRAPHICS)
         const x = this.cameras.main.centerX;
@@ -372,5 +373,17 @@ export default class PreloadScene extends Phaser.Scene {
 
     loadHub() {
         this.load.image("tastoPronto", "../assets/HubScene/tastoReady.png");
+    }
+
+    loadArena() {
+        this.load.image("SchermataDiCaricamentoOffline", "../assets/ArenaScene/offline/schermataDiCaricamentoOffline.png");
+
+        // --- ARENA 1 (map 1) ---
+        this.load.tilemapTiledJSON("arena1Map", "../assets/ArenaScene/offline/arene/map (1)/map.json");
+        this.load.image("arena1Tiles", "../assets/ArenaScene/offline/arene/map (1)/spritesheet.png");
+        this.load.spritesheet("arena1Background", "../assets/ArenaScene/offline/arene/map (1)/Background.png", {
+            frameWidth: 576,
+            frameHeight: 324
+        });
     }
 }
