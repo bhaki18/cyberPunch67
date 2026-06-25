@@ -50,8 +50,8 @@ const config = {
     physics: {
         default: "arcade",
         arcade: {
-            gravity: { y: 0 }, // Gravità zero di default (movimento libero multidirezionale)
-            debug: false       // Impostare su true per visualizzare i corpi fisici e le hitbox
+            gravity: { y: 9.81 * 2 }, // Gravità zero di default (movimento libero multidirezionale)
+            debug: true       // Impostare su true per visualizzare i corpi fisici e le hitbox
         }
     },
 

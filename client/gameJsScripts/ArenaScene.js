@@ -17,20 +17,31 @@ export default class ArenaScene extends Phaser.Scene {
     init(data) {
         this.modalita = data.modalita;
         this.personaggioPlayer = data.personaggioSelezionato;
+        console.log(this.personaggioPlayer);
 
         this.arrayDiAreneESfondiDelleArene = caricaArene();
 
         this.puoiAnimareLoSfondo = false;
-
-
-
+        this.playerCanMove = false;
+        this.canJump = false;
     }
 
     /**
      * Inizializzazione degli elementi grafici e fisici dell'arena.
      */
     create() {
-        // TODO: Inizializzare mappa dell'arena, posizionamento spawn dei player e setup del loop di combattimento.
+        // --- INPUTS ---
+        // addKeys registra i tasti sul keyboard plugin di Phaser.
+        // Ogni proprietà dell'oggetto diventa un Key ascoltabile con .isDown / JustDown.
+        this.inputManager = this.input.keyboard.addKeys({
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            right: Phaser.Input.Keyboard.KeyCodes.D,
+            up: Phaser.Input.Keyboard.KeyCodes.SPACE,
+            attack1: Phaser.Input.Keyboard.KeyCodes.C,
+            attack2: Phaser.Input.Keyboard.KeyCodes.V,
+            superAttack: Phaser.Input.Keyboard.KeyCodes.B
+        });
+
         if (this.modalita === "offline") {
             this.offlineModGameCreate();
         }
@@ -41,14 +52,15 @@ export default class ArenaScene extends Phaser.Scene {
      * Gestisce la fisica dei movimenti e il controllo degli input durante la battaglia.
      */
     update() {
-        // TODO: Aggiungere logica di aggiornamento degli input, update della fisica dei personaggi e collisioni di attacco.
         this.animaSfondo();
+
+        if (this.modalita === "offline") {
+            this.playerMovesOffline();
+        }
     }
 
     offlineModGameCreate() {
         this.schermataDiCaricamentoOfflineMod();
-
-
     }
 
     schermataDiCaricamentoOfflineMod() {
@@ -75,10 +87,10 @@ export default class ArenaScene extends Phaser.Scene {
                         ease: "power 4",
                         onComplete: () => {
                             this.schermataDiCaricamentoOffline.destroy();
-
                         },
                         onStart: () => {
                             this.creaArenaRandom();
+                            this.creaPlayerENPC();
                         }
                     });
 
@@ -128,6 +140,10 @@ export default class ArenaScene extends Phaser.Scene {
         this.layerArena = map.createLayer("Layer_0", tileset, 0, 0);
         this.layerArenaMuri = map.createLayer("Layer_1", tileset, 0, 0);
 
+        // Abilita la collisione su tutte le tile presenti nel layer dei muri.
+        // -1 = tile vuota (nessuna collisione), tutte le altre tile saranno solide.
+        this.layerArenaMuri.setCollisionByExclusion([-1]);
+
 
         // --- ADATTAMENTO ALLO SCHERMO ---
         // Usa convertArene per calcolare scala e posizione (mode: "stretch" = mapWidth x mapHeight)
@@ -159,11 +175,78 @@ export default class ArenaScene extends Phaser.Scene {
     animaSfondo() {
         if (this.puoiAnimareLoSfondo) {
             this.sfondo.tilePositionX += 2;
-
         }
     }
 
     creaPlayerENPC() {
 
+        const spawnX = 150;
+        const spawnY = 150;
+
+        this.player = this.physics.add.sprite(
+            spawnX,
+            spawnY,
+            this.personaggioPlayer.dati.nome
+        );
+        this.player.setCollideWorldBounds(true);
+        // Gravità positiva verso il basso per consentire il salto
+        this.player.body.setGravityY(500);
+
+        this.NPC = this.physics.add.sprite(
+            spawnX + 500,
+            spawnY,
+            this.personaggioPlayer.dati.nome
+        )
+            .setFlipX(true)
+            .setTint(0xff0000);
+        this.NPC.setCollideWorldBounds(true);
+        this.NPC.setImmovable(true);
+        this.NPC.body.setGravityY(500);
+
+        // Collisione player <-> muri della mappa
+        this.physics.add.collider(
+            this.player,
+            this.layerArenaMuri
+        );
+
+        // Collisione NPC <-> muri della mappa
+        this.physics.add.collider(
+            this.NPC,
+            this.layerArenaMuri
+        );
+
+        // Collisione player <-> NPC (impedisce che si trapassino)
+        this.physics.add.collider(
+            this.player,
+            this.NPC
+        );
+
+        // Abilita il movimento del player dopo la creazione
+        this.playerCanMove = true;
+    }
+
+    playerMovesOffline() {
+        if (!this.playerCanMove || !this.player) return;
+
+        const speed = 200;
+
+        // --- Movimento orizzontale ---
+        if (this.inputManager.right.isDown) {
+            this.player.setVelocityX(speed);
+            this.player.setFlipX(false);
+        } else if (this.inputManager.left.isDown) {
+            this.player.setVelocityX(-speed);
+            this.player.setFlipX(true);
+        } else {
+            // Nessun tasto premuto: ferma il player orizzontalmente
+            this.player.setVelocityX(0);
+        }
+
+        // --- Salto (solo se a terra, con JustDown per evitare salti continui) ---
+        this.canJump = this.player.body.blocked.down;
+
+        if (this.canJump && Phaser.Input.Keyboard.JustDown(this.inputManager.up)) {
+            this.player.setVelocityY(-400);
+        }
     }
 }
