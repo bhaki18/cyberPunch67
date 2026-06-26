@@ -788,7 +788,7 @@ export default class MainMenuScene extends Phaser.Scene {
                 this.animationPlayOnlineCanStart = false;
 
                 this.time.delayedCall(300, () => {
-                    this.scene.start("HubScene", { modalita: modalitaGioco, livelloPlayer: this.livelloPlayer, personaggiTot: this.personaggiTot });
+                    this.scene.start("HubScene", { modalita: modalitaGioco, livelloPlayer: this.livelloPlayer, personaggiTot: this.personaggiTot, nomePlayer: window.player.username });
                 });
             }
         });

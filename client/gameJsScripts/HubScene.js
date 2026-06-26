@@ -15,6 +15,7 @@ export default class HubScene extends Phaser.Scene {
         this.modalita = data.modalita;
         this.personaggiTot = data.personaggiTot;
         this.puoiAggiornareIlPersonaggioSelezionato = false;
+        this.nomePlayer = data.nomePlayer;
 
 
 
@@ -239,7 +240,7 @@ export default class HubScene extends Phaser.Scene {
                     onComplete: () => {
                         this.tastoProntoOffline.y -= 10;
                         this.tastoProntoOffline.clearTint();
-                        this.scene.start("ArenaScene", { modalita: "offline", personaggioSelezionato: this.personaggioSelezionato });
+                        this.scene.start("ArenaScene", { modalita: "offline", personaggioSelezionato: this.personaggioSelezionato, nomePlayer: this.nomePlayer });
                     }
                 });
             })

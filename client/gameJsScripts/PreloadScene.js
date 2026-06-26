@@ -377,6 +377,7 @@ export default class PreloadScene extends Phaser.Scene {
 
     loadArena() {
         this.load.image("SchermataDiCaricamentoOffline", "../assets/ArenaScene/offline/schermataDiCaricamentoOffline.png");
+        this.load.image("barraDegliHp", "../assets/ArenaScene/both/barraDegliHp.png");
 
         // --- ARENA 1 (map 1) ---
         this.load.tilemapTiledJSON("arena1Map", "../assets/ArenaScene/offline/arene/map (1)/map.json");
