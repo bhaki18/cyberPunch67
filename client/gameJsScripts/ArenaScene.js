@@ -239,8 +239,11 @@ export default class ArenaScene extends Phaser.Scene {
         // Abilita il movimento del player dopo la creazione
         this.playerCanMove = true;
         this.playerCanAttack = true;
-        this.delayAttack = 500 //ms serve per non far spammare il player
+        this.delayAttack = 500; // ms serve per non far spammare il player
         this.counter = 0;
+
+        // Doppio salto: 2 salti disponibili, si azzera toccando terra
+        this.jumpsLeft = 2;
 
         // crea le barre dei giocatori
         this.creaBarreHp(this.personaggioPlayer.dati.hp, this.personaggioPlayer.dati.hp,
@@ -265,11 +268,17 @@ export default class ArenaScene extends Phaser.Scene {
             this.player.setVelocityX(0);
         }
 
-        // --- Salto (solo se a terra, con JustDown per evitare salti continui) ---
-        this.canJump = this.player.body.blocked.down;
+        // --- Doppio Salto ---
+        // Quando il player tocca terra, ricarica i salti disponibili
+        if (this.player.body.blocked.down) {
+            this.jumpsLeft = 2;
+        }
 
-        if (this.canJump && Phaser.Input.Keyboard.JustDown(this.inputManager.up)) {
-            this.player.setVelocityY(-400);
+        if (Phaser.Input.Keyboard.JustDown(this.inputManager.up) && this.jumpsLeft > 0) {
+            // Primo salto: velocità piena. Secondo salto (aereo): leggermente ridotta
+            const jumpForce = this.jumpsLeft === 2 ? -400 : -320;
+            this.player.setVelocityY(jumpForce);
+            this.jumpsLeft--;
         }
 
         this.playerAttacksOffline();
