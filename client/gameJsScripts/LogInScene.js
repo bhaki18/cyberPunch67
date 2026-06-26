@@ -60,12 +60,12 @@ export default class LogInScene extends Phaser.Scene {
         const form = this.overlay.querySelector("#cyber-login-form");
         form.addEventListener("submit", (e) => {
             e.preventDefault();
-            
+
             const usernameVal = this.usernameInput.value;
             const passwordVal = this.passwordInput.value;
-            
+
             if (!usernameVal || !passwordVal) return;
-            
+
             this.connettiAlServer({
                 usernameInput: usernameVal,
                 passwordInput: passwordVal
@@ -111,7 +111,7 @@ export default class LogInScene extends Phaser.Scene {
             if (!data.token) {
                 console.log("Login fallito:", data);
                 this.isLoggingIn = false;
-                
+
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerText = "Access Denied - Retry";
@@ -143,13 +143,13 @@ export default class LogInScene extends Phaser.Scene {
                 // vai all'hub
                 this.shutdown();
                 this.scene.stop();
-                this.scene.start("HubScene");
+                this.scene.wake("MainMenuScene");
             });
 
         } catch (err) {
             console.error("Errore login:", err);
             this.isLoggingIn = false;
-            
+
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerText = "Error - Retry";
@@ -157,7 +157,7 @@ export default class LogInScene extends Phaser.Scene {
             if (loader) loader.style.display = "none";
             if (inputs) inputs.forEach(input => input.disabled = false);
             if (closeBtn) closeBtn.disabled = false;
-            
+
             localStorage.setItem("playerLogged", "false");
         }
     }

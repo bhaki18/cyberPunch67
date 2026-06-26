@@ -406,6 +406,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.logInBtn.on("pointerup", () => {
             this.logInBtn.setFrame(1);
             // Avvio overlay di Login
+            this.scene.sleep();
             this.scene.launch("LogInScene");
         });
 
