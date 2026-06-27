@@ -47,6 +47,7 @@ export default class SignUpScene extends Phaser.Scene {
         closeBtn.addEventListener("click", () => {
             this.shutdown();
             this.scene.stop();
+            this.scene.wake("MainMenuScene");
         });
 
         // Log in link listener

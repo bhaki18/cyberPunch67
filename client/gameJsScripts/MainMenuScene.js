@@ -211,6 +211,10 @@ export default class MainMenuScene extends Phaser.Scene {
 
         this.bottonePlayOnline.on("pointerup", () => {
             this.bottonePlayOnline.setFrame(1);
+            if (!window.player || !window.player.username) {
+                this.showCyberAlert("you need to log in to play online!");
+                return;
+            }
             this.animationPlayOnlineCanStart = true;
             this.animazioneToHub();
         });
@@ -809,5 +813,51 @@ export default class MainMenuScene extends Phaser.Scene {
         });
     }
 
+    showCyberAlert(message) {
+        // Rimuove eventuali alert già esistenti
+        const existingAlert = document.getElementById("cyber-alert-overlay");
+        if (existingAlert) {
+            existingAlert.remove();
+        }
 
+        const alertOverlay = document.createElement("div");
+        alertOverlay.id = "cyber-alert-overlay";
+        alertOverlay.className = "cyber-modal-overlay";
+        alertOverlay.style.width = "400px";
+        alertOverlay.style.padding = "30px 25px 25px 25px";
+        alertOverlay.style.border = "2px solid var(--cyber-pink)";
+        alertOverlay.style.borderTop = "4px solid var(--cyber-pink)";
+        alertOverlay.style.boxShadow = "0 0 30px rgba(255, 0, 127, 0.25)";
+        alertOverlay.style.zIndex = "10000";
+
+        alertOverlay.innerHTML = `
+            <button class="cyber-close-btn" id="cyber-alert-close-btn" title="Close" style="color: var(--cyber-pink);">&times;</button>
+            <h2 class="cyber-title" style="font-size: 22px; text-shadow: var(--cyber-glow-pink); margin-bottom: 20px;">
+                Access Denied
+            </h2>
+            <div class="cyber-subtitle" style="margin-top: -15px; margin-bottom: 20px; color: var(--cyber-cyan); text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);">
+                // SYSTEM_ERROR //
+            </div>
+            <div style="font-family: 'Share Tech Mono', monospace; font-size: 15px; color: #fff; text-align: center; margin-bottom: 25px; line-height: 1.6; letter-spacing: 0.5px;">
+                ${message.toUpperCase()}
+            </div>
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <button class="cyber-submit-btn" id="cyber-alert-ok-btn" style="width: 80%; background: var(--cyber-pink); color: #fff; box-shadow: var(--cyber-glow-pink); border-radius: 2px;">
+                    Acknowledge // OK
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(alertOverlay);
+
+        const closeAlert = () => {
+            alertOverlay.style.animation = "cyberReveal 0.2s reverse forwards";
+            setTimeout(() => {
+                alertOverlay.remove();
+            }, 200);
+        };
+
+        alertOverlay.querySelector("#cyber-alert-close-btn").addEventListener("click", closeAlert);
+        alertOverlay.querySelector("#cyber-alert-ok-btn").addEventListener("click", closeAlert);
+    }
 }

@@ -71,3 +71,24 @@ export default function caricaPersonaggiTot() {
     return pgs;
 
 }
+
+// REGOLE PER CREARE UN NUOVO PERSONAGGIO
+// # dichiara il pesonaggio tipo const nomePersonaggio
+// # iniziallizzalo come nuova classe Personaggio con new Personaggio();
+// # dentro i parametri della classe metti per forza:
+//      nome del pesonaggio con nome:"nome",
+//      ref dell'immagine del personaggio,che puoi fare uguale al nome ma senza spazi
+// lowkey hai fatto,devi solo mettere gli assets
+
+
+
+// REGOLE PER LA CREAZIONE DEGLI ASSETS DEI NUOVI PERSONAGGI
+// #crea la cartella ${personaggio.nomeImgRef} e dentro mettici:
+//      ${personaggio.nomeImgRef}.png in 64x64
+//      ${personaggio.nomeImgRef}Attacking1.png in 64x64
+//      ${personaggio.nomeImgRef}Attacking2.png in 64x64
+//      ${personaggio.nomeImgRef}Falling.png in 64x64
+//      ${personaggio.nomeImgRef}Jumping.png in 128x128
+//      ${personaggio.nomeImgRef}Standing.png in 64x64
+//      ${personaggio.nomeImgRef}SuperAttacking.png in 128x128
+//      ${personaggio.nomeImgRef}Walking.png  questo è uno spritesheet da 5 frames in 64x103 a due righe e tre colonne

@@ -60,29 +60,26 @@ export default class InfoScene extends Phaser.Scene {
                     <div class="controls-grid">
                         <div class="key-row">
                             <div class="key-group movement">
-                                <div class="key-label">MOVIMENTO</div>
-                                <div class="key-layout">
-                                    <div class="key ghost"></div>
-                                    <div class="key">W</div>
-                                    <div class="key ghost"></div>
-                                    <div class="key">A</div>
-                                    <div class="key">S</div>
-                                    <div class="key">D</div>
+                                <div class="key-label">MOVIMENTO E SALTO</div>
+                                <div class="key-layout flat">
+                                    <div class="key">A<span class="key-desc">LEFT</span></div>
+                                    <div class="key">D<span class="key-desc">RIGHT</span></div>
+                                    <div class="key" style="width: 80px;">SPACE<span class="key-desc">JUMP</span></div>
                                 </div>
                             </div>
                             <div class="key-group attacks">
                                 <div class="key-label">ATTACCHI</div>
                                 <div class="key-layout flat">
-                                    <div class="key cyan">Z<span class="key-desc">ATK 1</span></div>
-                                    <div class="key pink">X<span class="key-desc">ATK 2</span></div>
-                                    <div class="key yellow">C<span class="key-desc">SPECIAL</span></div>
+                                    <div class="key cyan">C<span class="key-desc">ATK 1</span></div>
+                                    <div class="key pink">V<span class="key-desc">ATK 2</span></div>
+                                    <div class="key yellow">B<span class="key-desc">SUPER</span></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="info-tag-row" style="margin-top:18px">
-                        <span class="info-tag">&#9670; WASD per muoversi e saltare</span>
-                        <span class="info-tag">&#9670; Z X C per attaccare</span>
+                        <span class="info-tag">&#9670; A / D per muoversi, SPACE per saltare</span>
+                        <span class="info-tag">&#9670; C / V per attaccare, B per super attacco</span>
                     </div>
                 </div>
 
