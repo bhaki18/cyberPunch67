@@ -352,6 +352,8 @@ export default class PreloadScene extends Phaser.Scene {
             this.load.image(`${personaggio.nome}attacking1`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Attacking1.png`);
             this.load.image(`${personaggio.nome}attacking2`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Attacking2.png`);
             this.load.image(`${personaggio.nome}standing`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Standing.png`);
+            this.load.image(`${personaggio.nome}superAttacking`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}SuperAttacking.png`);
+            this.load.image(`${personaggio.nome}jumping`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Jumping.png`);
             this.load.spritesheet(`${personaggio.nome}walking`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Walking.png`,
                 {
                     frameWidth: 64,
@@ -390,7 +392,7 @@ export default class PreloadScene extends Phaser.Scene {
                     start: 0,
                     end: 4
                 }),
-                frameRate: 5,
+                frameRate: 8,
                 repeat: -1
             });
 
@@ -418,6 +420,20 @@ export default class PreloadScene extends Phaser.Scene {
             this.anims.create({
                 key: `${personaggio.nome}standing`,
                 frames: [{ key: `${personaggio.nome}standing` }],
+                frameRate: 1,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: `${personaggio.nome}jumping`,
+                frames: [{ key: `${personaggio.nome}jumping` }],
+                frameRate: 1,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: `${personaggio.nome}superAttacking`,
+                frames: [{ key: `${personaggio.nome}superAttacking` }],
                 frameRate: 1,
                 repeat: -1
             });

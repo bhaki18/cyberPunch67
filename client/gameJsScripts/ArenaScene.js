@@ -18,6 +18,8 @@ export default class ArenaScene extends Phaser.Scene {
         this.modalita = data.modalita;
         this.personaggioPlayer = data.personaggioSelezionato;
         this.playerName = data.nomePlayer;
+        this.livelloPlayer = data.livelloPlayer;
+        this.personaggiTot = data.personaggiTot;
         console.log(this.personaggioPlayer);
 
         this.arrayDiAreneESfondiDelleArene = caricaArene();
@@ -27,6 +29,12 @@ export default class ArenaScene extends Phaser.Scene {
         this.canJump = false;
         this.playerState = "";
         this.animationCounter = 0;
+
+        // Inizializzazione variabili NPC
+        this.npcState = "";
+        this.npcAttackCounter = 0;
+        this.npcCooldownCounter = 0;
+        this.npcJumpsLeft = 2;
     }
 
     /**
@@ -60,6 +68,9 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.modalita === "offline") {
             this.playerMovesOffline();
             this.animazioniPlayer(this.playerState);
+
+            this.npcBehaviorOffline();
+            this.animazioniNPC(this.npcState);
         }
     }
 
@@ -219,7 +230,7 @@ export default class ArenaScene extends Phaser.Scene {
             .setFlipX(true)
             .setTint(0xff0000);
         this.NPC.setCollideWorldBounds(true);
-        this.NPC.setImmovable(true);
+        this.NPC.setImmovable(false);
         this.NPC.body.setGravityY(500);
 
         // Stesso body pixel-perfect per l'NPC
@@ -247,7 +258,7 @@ export default class ArenaScene extends Phaser.Scene {
         // Abilita il movimento del player dopo la creazione
         this.playerCanMove = true;
         this.playerCanAttack = true;
-        this.delayAttack = 500; // ms serve per non far spammare il player
+        this.delayAttack = 60; // 60 frames = circa 1 secondi a 60fps
         this.counter = 0;
 
         // Doppio salto: 2 salti disponibili, si azzera toccando terra
@@ -338,6 +349,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack1;
+                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa1);
             }
         }
 
@@ -346,6 +358,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack2;
+                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa2);
             }
         }
 
@@ -354,6 +367,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.superAttack;
+                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc);
             }
         }
 
@@ -367,6 +381,428 @@ export default class ArenaScene extends Phaser.Scene {
 
     }
 
+    creaHitboxAttacco(danno) {
+        if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
+
+        // Sposta la hitbox a sinistra o a destra in base a dove guarda il player
+        const offsetDirezione = this.player.flipX ? -60 : 60;
+        const hitboxX = this.player.x + offsetDirezione;
+        const hitboxY = this.player.y - 30; // Altezza mezza persona (ancorata ai piedi)
+
+        // Crea un oggetto fisico temporaneo e invisibile
+        const hitbox = this.physics.add.sprite(hitboxX, hitboxY, null);
+        hitbox.setSize(60, 50);
+        hitbox.setVisible(false);
+        hitbox.body.setAllowGravity(false);
+
+        let colpoAndatoASegno = false;
+
+        // Rileva l'overlap singolo col nemico
+        this.physics.add.overlap(hitbox, this.NPC, () => {
+            if (!colpoAndatoASegno) {
+                colpoAndatoASegno = true;
+                this.riceviDannoNPC(danno);
+            }
+        });
+
+        // Distruggi la hitbox dopo 150 millisecondi
+        this.time.delayedCall(150, () => {
+            hitbox.destroy();
+        });
+    }
+
+    riceviDannoNPC(danno) {
+        if (this.hpEnemy <= 0) return;
+
+        this.hpEnemy -= danno;
+        if (this.hpEnemy < 0) {
+            this.hpEnemy = 0;
+        }
+
+        // Ridimensiona graficamente la barra HP del nemico
+        if (this.barraHpGreenEnemy && this.maxHpEnemy) {
+            const percentuale = this.hpEnemy / this.maxHpEnemy;
+            const lunghezzaHpPx = 450 * 0.7 - 10;
+            this.barraHpGreenEnemy.width = lunghezzaHpPx * percentuale;
+        }
+
+        // Effetto colpo: shake dello schermo
+        this.cameras.main.shake(100, 0.015);
+
+        // Lampeggio dell'NPC (da rosso a bianco) per 100ms
+        const tintOriginale = this.NPC.tintTopLeft;
+        this.NPC.setTint(0xffffff);
+        this.time.delayedCall(100, () => {
+            if (this.NPC && this.hpEnemy > 0) {
+                this.NPC.setTint(tintOriginale);
+            }
+        });
+
+        if (this.hpEnemy === 0) {
+            this.gestisciMorteNPC();
+        }
+    }
+
+    gestisciMorteNPC() {
+        this.playerCanMove = false;
+        this.playerCanAttack = false;
+
+        this.player.setVelocity(0, 0);
+        this.NPC.setVelocity(0, 0);
+        this.NPC.setTint(0x333333); // Grigio scuro per nemico sconfitto
+
+        // Testo di Vittoria
+        const stileVittoria = {
+            fontFamily: 'Orbitron',
+            fontSize: '48px',
+            fontStyle: 'bold',
+            color: '#00ff00',
+            stroke: '#000000',
+            strokeThickness: 6,
+            shadow: { color: '#000000', blur: 10, stroke: true, fill: true }
+        };
+
+        const testoVittoria = this.add.text(
+            400,
+            250,
+            "VITTORIA!",
+            stileVittoria
+        ).setOrigin(0.5).setDepth(10).setAlpha(0);
+
+        testoVittoria.setScale(0.5);
+        this.tweens.add({
+            targets: testoVittoria,
+            alpha: 1,
+            scale: 1,
+            duration: 500,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.time.delayedCall(1000, () => {
+                    const stileSottoTesto = {
+                        fontFamily: 'Orbitron',
+                        fontSize: '18px',
+                        color: '#ffffff',
+                        stroke: '#000000',
+                        strokeThickness: 3
+                    };
+                    
+                    const sottoTesto = this.add.text(
+                        400,
+                        320,
+                        "Ritorno all'Hub...",
+                        stileSottoTesto
+                    ).setOrigin(0.5).setDepth(10).setAlpha(0);
+                    
+                    this.tweens.add({
+                        targets: sottoTesto,
+                        alpha: 1,
+                        duration: 300
+                    });
+                });
+
+                // Ritorno all'Hub
+                this.time.delayedCall(3000, () => {
+                    this.cameras.main.fadeOut(500, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.start("HubScene", {
+                            modalita: this.modalita,
+                            nomePlayer: this.playerName,
+                            livelloPlayer: this.livelloPlayer,
+                            personaggiTot: this.personaggiTot
+                        });
+                    });
+                });
+            }
+        });
+    }
+
+    npcBehaviorOffline() {
+        if (!this.NPC || !this.player || this.hpEnemy <= 0 || this.hpPlayer <= 0) return;
+
+        // Decrementa i contatori
+        if (this.npcAttackCounter > 0) {
+            this.npcAttackCounter--;
+            // Ferma il movimento orizzontale durante l'attacco
+            this.NPC.setVelocityX(0);
+            return;
+        }
+
+        if (this.npcCooldownCounter > 0) {
+            this.npcCooldownCounter--;
+        }
+
+        const speed = 130; // Velocità NPC leggermente inferiore a quella del player (che è 200) per bilanciamento
+        const isGrounded = this.NPC.body.blocked.down || this.NPC.body.touching.down;
+        
+        if (isGrounded) {
+            this.npcJumpsLeft = 2;
+        }
+
+        const diffX = this.player.x - this.NPC.x;
+        const absDiffX = Math.abs(diffX);
+        const diffY = this.player.y - this.NPC.y;
+
+        // 1. Chasing (Inseguimento) o posizionamento
+        if (absDiffX > 65) {
+            // Muoviti verso il player
+            const direzione = diffX > 0 ? 1 : -1;
+            this.NPC.setVelocityX(direzione * speed);
+            this.NPC.setFlipX(direzione < 0);
+
+            if (isGrounded) {
+                this.npcState = "walking";
+            }
+
+            // Salto se c'è un ostacolo (muro) o se il player è sopra ed è il caso di saltare
+            const blockedOnSides = this.NPC.body.blocked.left || this.NPC.body.blocked.right;
+            if ((blockedOnSides || (diffY < -50 && Phaser.Math.Between(0, 100) < 5)) && this.npcJumpsLeft > 0) {
+                const jumpForce = this.npcJumpsLeft === 2 ? -400 : -320;
+                this.NPC.setVelocityY(jumpForce);
+                this.npcJumpsLeft--;
+                this.npcState = "jumping";
+            }
+        } else {
+            // Siamo vicini: ferma il movimento e decidi l'attacco
+            this.NPC.setVelocityX(0);
+            this.NPC.setFlipX(diffX < 0);
+
+            if (isGrounded) {
+                this.npcState = "standing";
+            }
+
+            // Attacco con cooldown
+            if (isGrounded && this.npcCooldownCounter === 0 && Phaser.Math.Between(0, 100) < 8) {
+                const randomAttacco = Phaser.Math.Between(1, 2);
+                if (randomAttacco === 1) {
+                    this.npcState = "attacking1";
+                    this.npcAttackCounter = 30; // Blocca movimento per 30 frame
+                    this.npcCooldownCounter = 60; // Cooldown di 60 frame prima del prossimo attacco
+                    this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa1);
+                } else {
+                    this.npcState = "attacking2";
+                    this.npcAttackCounter = 30;
+                    this.npcCooldownCounter = 60;
+                    this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa2);
+                }
+            }
+        }
+
+        // --- Airborne State Detection ---
+        if (!isGrounded) {
+            if (this.NPC.body.velocity.y < -50) {
+                this.npcState = "jumping";
+            } else if (this.NPC.body.velocity.y > 50) {
+                this.npcState = "falling";
+            }
+        }
+    }
+
+    creaHitboxAttaccoNPC(danno) {
+        if (!this.NPC || !this.player || this.hpPlayer <= 0) return;
+
+        const offsetDirezione = this.NPC.flipX ? -60 : 60;
+        const hitboxX = this.NPC.x + offsetDirezione;
+        const hitboxY = this.NPC.y - 30;
+
+        const hitbox = this.physics.add.sprite(hitboxX, hitboxY, null);
+        hitbox.setSize(60, 50);
+        hitbox.setVisible(false);
+        hitbox.body.setAllowGravity(false);
+
+        let colpoAndatoASegno = false;
+
+        this.physics.add.overlap(hitbox, this.player, () => {
+            if (!colpoAndatoASegno) {
+                colpoAndatoASegno = true;
+                this.riceviDannoPlayer(danno);
+            }
+        });
+
+        this.time.delayedCall(150, () => {
+            hitbox.destroy();
+        });
+    }
+
+    riceviDannoPlayer(danno) {
+        if (this.hpPlayer <= 0) return;
+
+        this.hpPlayer -= danno;
+        if (this.hpPlayer < 0) {
+            this.hpPlayer = 0;
+        }
+
+        // Ridimensiona barra HP del player
+        if (this.barraHpGreenPlayer && this.maxHpPlayer) {
+            const percentuale = this.hpPlayer / this.maxHpPlayer;
+            const lunghezzaHpPx = 450 * 0.7 - 10;
+            this.barraHpGreenPlayer.width = lunghezzaHpPx * percentuale;
+        }
+
+        // Shake e flash del player
+        this.cameras.main.shake(100, 0.015);
+
+        // Flash rosso temporaneo
+        this.player.setTint(0xff0000);
+        this.time.delayedCall(100, () => {
+            if (this.player) {
+                this.player.clearTint();
+            }
+        });
+
+        if (this.hpPlayer === 0) {
+            this.gestisciMortePlayer();
+        }
+    }
+
+    gestisciMortePlayer() {
+        this.playerCanMove = false;
+        this.playerCanAttack = false;
+
+        this.player.setVelocity(0, 0);
+        this.NPC.setVelocity(0, 0);
+        this.player.setTint(0x333333); // Grigio scuro per player sconfitto
+
+        // Testo di Sconfitta
+        const stileSconfitta = {
+            fontFamily: 'Orbitron',
+            fontSize: '48px',
+            fontStyle: 'bold',
+            color: '#ff0000',
+            stroke: '#000000',
+            strokeThickness: 6,
+            shadow: { color: '#000000', blur: 10, stroke: true, fill: true }
+        };
+
+        const testoSconfitta = this.add.text(
+            400,
+            250,
+            "SCONFITTA",
+            stileSconfitta
+        ).setOrigin(0.5).setDepth(10).setAlpha(0);
+
+        testoSconfitta.setScale(0.5);
+        this.tweens.add({
+            targets: testoSconfitta,
+            alpha: 1,
+            scale: 1,
+            duration: 500,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.time.delayedCall(1000, () => {
+                    const stileSottoTesto = {
+                        fontFamily: 'Orbitron',
+                        fontSize: '18px',
+                        color: '#ffffff',
+                        stroke: '#000000',
+                        strokeThickness: 3
+                    };
+                    
+                    const sottoTesto = this.add.text(
+                        400,
+                        320,
+                        "Ritorno all'Hub...",
+                        stileSottoTesto
+                    ).setOrigin(0.5).setDepth(10).setAlpha(0);
+                    
+                    this.tweens.add({
+                        targets: sottoTesto,
+                        alpha: 1,
+                        duration: 300
+                    });
+                });
+
+                // Ritorno all'Hub
+                this.time.delayedCall(3000, () => {
+                    this.cameras.main.fadeOut(500, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.start("HubScene", {
+                            modalita: this.modalita,
+                            nomePlayer: this.playerName,
+                            livelloPlayer: this.livelloPlayer,
+                            personaggiTot: this.personaggiTot
+                        });
+                    });
+                });
+            }
+        });
+    }
+
+    animazioniNPC(npcState) {
+        if (!this.NPC) return;
+
+        if (this.npcAttackCounter > 0) {
+            if (this.playerBodyW && this.playerBodyH) {
+                const targetW = this.playerBodyW / this.NPC.scaleX;
+                const targetH = this.playerBodyH / this.NPC.scaleY;
+                const currentOffX = (this.NPC.width - targetW) / 2;
+                const currentOffY = this.NPC.height - targetH;
+                this.NPC.body.setSize(targetW, targetH, false);
+                this.NPC.body.setOffset(currentOffX, currentOffY);
+            }
+            return;
+        }
+
+        const delayAnimation = 30;
+        let animation = `${this.personaggioPlayer.dati.nome}standing`;
+        let targetScale = 1;
+
+        switch (npcState) {
+            case "walking":
+                animation = `${this.personaggioPlayer.dati.nome}walking`;
+                targetScale = 64 / 103;
+                break;
+            case "falling":
+                animation = `${this.personaggioPlayer.dati.nome}falling`;
+                break;
+            case "jumping":
+                if (this.anims.exists(`${this.personaggioPlayer.dati.nome}jumping`)) {
+                    animation = `${this.personaggioPlayer.dati.nome}jumping`;
+                    targetScale = 0.5;
+                } else {
+                    animation = `${this.personaggioPlayer.dati.nome}falling`;
+                }
+                break;
+            case "attacking1":
+                animation = `${this.personaggioPlayer.dati.nome}attacking1`;
+                break;
+            case "attacking2":
+                animation = `${this.personaggioPlayer.dati.nome}attacking2`;
+                break;
+            case "superAttacking":
+                animation = `${this.personaggioPlayer.dati.nome}superAttacking`;
+                targetScale = 0.5;
+                break;
+            case "standing":
+            default:
+                animation = `${this.personaggioPlayer.dati.nome}standing`;
+                break;
+        }
+
+        if (this.NPC.anims.isPlaying && this.NPC.anims.currentAnim && this.NPC.anims.currentAnim.key === animation) {
+            if (this.playerBodyW && this.playerBodyH) {
+                const targetW = this.playerBodyW / this.NPC.scaleX;
+                const targetH = this.playerBodyH / this.NPC.scaleY;
+                const currentOffX = (this.NPC.width - targetW) / 2;
+                const currentOffY = this.NPC.height - targetH;
+                this.NPC.body.setSize(targetW, targetH, false);
+                this.NPC.body.setOffset(currentOffX, currentOffY);
+            }
+            return;
+        }
+
+        this.NPC.anims.play(animation, true);
+        this.NPC.setScale(targetScale);
+
+        if (this.playerBodyW && this.playerBodyH) {
+            const targetW = this.playerBodyW / this.NPC.scaleX;
+            const targetH = this.playerBodyH / this.NPC.scaleY;
+            const currentOffX = (this.NPC.width - targetW) / 2;
+            const currentOffY = this.NPC.height - targetH;
+            this.NPC.body.setSize(targetW, targetH, false);
+            this.NPC.body.setOffset(currentOffX, currentOffY);
+        }
+    }
+
 
     creaBarreHp(hpPlayer, hpEnemy, refBarraHp, nomePlayer, nomeEnemy) {
         nomePlayer = nomePlayer || "User";
@@ -374,6 +810,8 @@ export default class ArenaScene extends Phaser.Scene {
 
         this.hpPlayer = hpPlayer;
         this.hpEnemy = hpEnemy;
+        this.maxHpPlayer = hpPlayer;
+        this.maxHpEnemy = hpEnemy;
 
         const W = 800;
 
@@ -463,35 +901,35 @@ export default class ArenaScene extends Phaser.Scene {
     animazioniPlayer(playerState) {
         if (!this.player) return;
 
-        // Reapply the locked body size and offset on every frame to prevent Phaser from resetting it on frame changes,
-        // dynamically calculating the offsets based on the current frame's dimensions.
-        if (this.playerBodyW && this.playerBodyH) {
-            const currentOffX = (this.player.width - this.playerBodyW) / 2;
-            const currentOffY = this.player.height - this.playerBodyH;
-            this.player.body.setSize(this.playerBodyW, this.playerBodyH, false);
-            this.player.body.setOffset(currentOffX, currentOffY);
-        }
-
         if (this.animationCounter > 0) {
             this.animationCounter--;
+            if (this.playerBodyW && this.playerBodyH) {
+                const targetW = this.playerBodyW / this.player.scaleX;
+                const targetH = this.playerBodyH / this.player.scaleY;
+                const currentOffX = (this.player.width - targetW) / 2;
+                const currentOffY = this.player.height - targetH;
+                this.player.body.setSize(targetW, targetH, false);
+                this.player.body.setOffset(currentOffX, currentOffY);
+            }
             return;
         }
 
-        const delayAnimation = 30; // fps di attesa
+        const delayAnimation = 30; // 30 frames = circa 0.5 secondi a 60fps
         let animation = `${this.personaggioPlayer.dati.nome}standing`;
+        let targetScale = 1;
 
         switch (playerState) {
             case "walking":
                 animation = `${this.personaggioPlayer.dati.nome}walking`;
-                this.player.setScale(64 / 103);
+                targetScale = 64 / 103;
                 break;
             case "falling":
                 animation = `${this.personaggioPlayer.dati.nome}falling`;
-
                 break;
             case "jumping":
                 if (this.anims.exists(`${this.personaggioPlayer.dati.nome}jumping`)) {
                     animation = `${this.personaggioPlayer.dati.nome}jumping`;
+                    targetScale = 0.5; // texture 128x128, visual 64x64
                 } else {
                     animation = `${this.personaggioPlayer.dati.nome}falling`;
                 }
@@ -507,6 +945,7 @@ export default class ArenaScene extends Phaser.Scene {
             case "superAttacking":
                 animation = `${this.personaggioPlayer.dati.nome}superAttacking`;
                 this.animationCounter = delayAnimation * 2;
+                targetScale = 0.5; // texture 128x128, visual 64x64
                 break;
             case "standing":
             default:
@@ -515,15 +954,31 @@ export default class ArenaScene extends Phaser.Scene {
         }
 
         if (this.player.anims.isPlaying && this.player.anims.currentAnim && this.player.anims.currentAnim.key === animation) {
+            if (this.playerBodyW && this.playerBodyH) {
+                const targetW = this.playerBodyW / this.player.scaleX;
+                const targetH = this.playerBodyH / this.player.scaleY;
+                const currentOffX = (this.player.width - targetW) / 2;
+                const currentOffY = this.player.height - targetH;
+                this.player.body.setSize(targetW, targetH, false);
+                this.player.body.setOffset(currentOffX, currentOffY);
+            }
             return;
         }
 
-
+        // 1. Play the animation first to instantly update the texture frame dimensions (width and height)
         this.player.anims.play(animation, true);
-        if (animation === "walking") {
-            this.player.setScale(64 / 103);
-        } else {
-            this.player.setScale(1);
+
+        // 2. Set the target scale on the new frame
+        this.player.setScale(targetScale);
+
+        // 3. Calculate and apply the physics body size and offset using the new frame's dimensions and scale
+        if (this.playerBodyW && this.playerBodyH) {
+            const targetW = this.playerBodyW / this.player.scaleX;
+            const targetH = this.playerBodyH / this.player.scaleY;
+            const currentOffX = (this.player.width - targetW) / 2;
+            const currentOffY = this.player.height - targetH;
+            this.player.body.setSize(targetW, targetH, false);
+            this.player.body.setOffset(currentOffX, currentOffY);
         }
     }
 }

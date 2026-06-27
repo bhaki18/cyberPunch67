@@ -240,7 +240,13 @@ export default class HubScene extends Phaser.Scene {
                     onComplete: () => {
                         this.tastoProntoOffline.y -= 10;
                         this.tastoProntoOffline.clearTint();
-                        this.scene.start("ArenaScene", { modalita: "offline", personaggioSelezionato: this.personaggioSelezionato, nomePlayer: this.nomePlayer });
+                        this.scene.start("ArenaScene", { 
+                            modalita: "offline", 
+                            personaggioSelezionato: this.personaggioSelezionato, 
+                            nomePlayer: this.nomePlayer,
+                            livelloPlayer: this.livelloPlayer,
+                            personaggiTot: this.personaggiTot
+                        });
                     }
                 });
             })
