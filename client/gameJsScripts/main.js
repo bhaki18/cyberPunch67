@@ -55,6 +55,10 @@ const config = {
         }
     },
 
+    input: {
+        gamepad: true
+    },
+
     // Elenco ordinato delle scene registrate nel motore di gioco.
     // La prima scena dell'array (BootScene) viene avviata automaticamente all'avvio.
     scene: [

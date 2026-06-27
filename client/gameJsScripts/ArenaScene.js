@@ -35,12 +35,22 @@ export default class ArenaScene extends Phaser.Scene {
         this.npcAttackCounter = 0;
         this.npcCooldownCounter = 0;
         this.npcJumpsLeft = 2;
+
+        // Inizializzazione variabili Super Attacco
+        this.superAttackCharge = 0;
+        this.maxSuperAttackCharge = 300;
+        this.superGlowTween = null;
+
+        // Inizializzazione stato precedente pulsanti Gamepad
+        this.statoGamepadPrecedente = null;
     }
 
     /**
      * Inizializzazione degli elementi grafici e fisici dell'arena.
      */
     create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+
         // --- INPUTS ---
         // addKeys registra i tasti sul keyboard plugin di Phaser.
         // Ogni proprietà dell'oggetto diventa un Key ascoltabile con .isDown / JustDown.
@@ -72,6 +82,66 @@ export default class ArenaScene extends Phaser.Scene {
             this.npcBehaviorOffline();
             this.animazioniNPC(this.npcState);
         }
+
+        this.salvaStatoGamepadPrecedente();
+    }
+
+    salvaStatoGamepadPrecedente() {
+        const pad = this.input.gamepad.pad1;
+        if (pad) {
+            this.statoGamepadPrecedente = {
+                up: pad.up || pad.buttons[12].pressed || pad.buttons[0].pressed,
+                attack1: pad.buttons[2].pressed,
+                attack2: pad.buttons[3].pressed,
+                superAttack: pad.buttons[1].pressed
+            };
+        } else {
+            this.statoGamepadPrecedente = null;
+        }
+    }
+
+    isUpJustPressed() {
+        const keyboardJustDown = Phaser.Input.Keyboard.JustDown(this.inputManager.up);
+        const pad = this.input.gamepad.pad1;
+        if (!pad) return keyboardJustDown;
+
+        const currentUp = pad.up || pad.buttons[12].pressed || pad.buttons[0].pressed;
+        const prevUp = this.statoGamepadPrecedente ? this.statoGamepadPrecedente.up : false;
+
+        return keyboardJustDown || (currentUp && !prevUp);
+    }
+
+    isAttack1JustPressed() {
+        const keyboardJustDown = Phaser.Input.Keyboard.JustDown(this.inputManager.attack1);
+        const pad = this.input.gamepad.pad1;
+        if (!pad) return keyboardJustDown;
+
+        const currentAttack1 = pad.buttons[2].pressed;
+        const prevAttack1 = this.statoGamepadPrecedente ? this.statoGamepadPrecedente.attack1 : false;
+
+        return keyboardJustDown || (currentAttack1 && !prevAttack1);
+    }
+
+    isAttack2JustPressed() {
+        const keyboardJustDown = Phaser.Input.Keyboard.JustDown(this.inputManager.attack2);
+        const pad = this.input.gamepad.pad1;
+        if (!pad) return keyboardJustDown;
+
+        const currentAttack2 = pad.buttons[3].pressed;
+        const prevAttack2 = this.statoGamepadPrecedente ? this.statoGamepadPrecedente.attack2 : false;
+
+        return keyboardJustDown || (currentAttack2 && !prevAttack2);
+    }
+
+    isSuperAttackJustPressed() {
+        const keyboardJustDown = Phaser.Input.Keyboard.JustDown(this.inputManager.superAttack);
+        const pad = this.input.gamepad.pad1;
+        if (!pad) return keyboardJustDown;
+
+        const currentSuper = pad.buttons[1].pressed;
+        const prevSuper = this.statoGamepadPrecedente ? this.statoGamepadPrecedente.superAttack : false;
+
+        return keyboardJustDown || (currentSuper && !prevSuper);
     }
 
     offlineModGameCreate() {
@@ -94,25 +164,27 @@ export default class ArenaScene extends Phaser.Scene {
             alpha: 1,
             ease: "power 4",
             onStart: () => {
-                setTimeout(() => {
+                this.time.delayedCall(5000, () => {
+                    if (!this.scene.isActive()) return;
+
                     this.tweens.add({
                         targets: this.schermataDiCaricamentoOffline,
                         duration: 300,
                         alpha: 0,
                         ease: "power 4",
                         onComplete: () => {
-                            this.schermataDiCaricamentoOffline.destroy();
+                            if (this.schermataDiCaricamentoOffline) {
+                                this.schermataDiCaricamentoOffline.destroy();
+                            }
                         },
                         onStart: () => {
                             this.creaArenaRandom();
                             this.creaPlayerENPC();
                         }
                     });
-
-                }, 5000);
+                });
             }
         });
-
     }
 
     creaArenaRandom() {
@@ -284,17 +356,18 @@ export default class ArenaScene extends Phaser.Scene {
         const isGrounded = this.player.body.blocked.down || this.player.body.touching.down;
 
         // --- Movimento orizzontale ---
-        if (this.inputManager.right.isDown) {
+        const pad = this.input.gamepad.pad1;
+        const isRightDown = this.inputManager.right.isDown || (pad && (pad.right || pad.buttons[15].pressed || pad.leftStick.x > 0.3));
+        const isLeftDown = this.inputManager.left.isDown || (pad && (pad.left || pad.buttons[14].pressed || pad.leftStick.x < -0.3));
+
+        if (isRightDown) {
             this.player.setVelocityX(speed);
             this.player.setFlipX(false);
 
             if (isGrounded) {
                 this.playerState = playerMoves.walking;
             }
-
-
-
-        } else if (this.inputManager.left.isDown) {
+        } else if (isLeftDown) {
             this.player.setVelocityX(-speed);
             this.player.setFlipX(true);
 
@@ -316,7 +389,7 @@ export default class ArenaScene extends Phaser.Scene {
             this.jumpsLeft = 2;
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.inputManager.up) && this.jumpsLeft > 0) {
+        if (this.isUpJustPressed() && this.jumpsLeft > 0) {
             // Primo salto: velocità piena. Secondo salto (aereo): leggermente ridotta
             const jumpForce = this.jumpsLeft === 2 ? -400 : -320;
             this.player.setVelocityY(jumpForce);
@@ -344,7 +417,7 @@ export default class ArenaScene extends Phaser.Scene {
         };
 
 
-        if (Phaser.Input.Keyboard.JustDown(this.inputManager.attack1)) {
+        if (this.isAttack1JustPressed()) {
             if (this.playerCanAttack) {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
@@ -353,7 +426,7 @@ export default class ArenaScene extends Phaser.Scene {
             }
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.inputManager.attack2)) {
+        if (this.isAttack2JustPressed()) {
             if (this.playerCanAttack) {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
@@ -362,12 +435,19 @@ export default class ArenaScene extends Phaser.Scene {
             }
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.inputManager.superAttack)) {
+        if (this.isSuperAttackJustPressed()) {
             if (this.playerCanAttack) {
-                this.player.setTexture(this.personaggioPlayer.dati.nome);
-                this.counter = this.delayAttack;
-                this.playerState = playerAttacks.superAttack;
-                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc);
+                if (this.superAttackCharge >= this.maxSuperAttackCharge) {
+                    this.superAttackCharge = 0;
+                    this.aggiornaBarraSuper();
+
+                    this.player.setTexture(this.personaggioPlayer.dati.nome);
+                    this.counter = this.delayAttack;
+                    this.playerState = playerAttacks.superAttack;
+                    this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc, true);
+                } else {
+                    console.log("Super attacco non ancora carico!");
+                }
             }
         }
 
@@ -381,7 +461,7 @@ export default class ArenaScene extends Phaser.Scene {
 
     }
 
-    creaHitboxAttacco(danno) {
+    creaHitboxAttacco(danno, isSuper = false) {
         if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
 
         // Sposta la hitbox a sinistra o a destra in base a dove guarda il player
@@ -401,7 +481,7 @@ export default class ArenaScene extends Phaser.Scene {
         this.physics.add.overlap(hitbox, this.NPC, () => {
             if (!colpoAndatoASegno) {
                 colpoAndatoASegno = true;
-                this.riceviDannoNPC(danno);
+                this.riceviDannoNPC(danno, isSuper);
             }
         });
 
@@ -411,7 +491,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    riceviDannoNPC(danno) {
+    riceviDannoNPC(danno, isSuper = false) {
         if (this.hpEnemy <= 0) return;
 
         this.hpEnemy -= danno;
@@ -419,11 +499,19 @@ export default class ArenaScene extends Phaser.Scene {
             this.hpEnemy = 0;
         }
 
+        // Incrementa la carica della super (fino al massimo consentito) SOLO se non è un super attacco
+        if (!isSuper && this.superAttackCharge < this.maxSuperAttackCharge) {
+            this.superAttackCharge += danno;
+            if (this.superAttackCharge > this.maxSuperAttackCharge) {
+                this.superAttackCharge = this.maxSuperAttackCharge;
+            }
+            this.aggiornaBarraSuper();
+        }
+
         // Ridimensiona graficamente la barra HP del nemico
         if (this.barraHpGreenEnemy && this.maxHpEnemy) {
             const percentuale = this.hpEnemy / this.maxHpEnemy;
-            const lunghezzaHpPx = 450 * 0.7 - 10;
-            this.barraHpGreenEnemy.width = lunghezzaHpPx * percentuale;
+            this.barraHpGreenEnemy.scaleX = percentuale;
         }
 
         // Effetto colpo: shake dello schermo
@@ -634,8 +722,7 @@ export default class ArenaScene extends Phaser.Scene {
         // Ridimensiona barra HP del player
         if (this.barraHpGreenPlayer && this.maxHpPlayer) {
             const percentuale = this.hpPlayer / this.maxHpPlayer;
-            const lunghezzaHpPx = 450 * 0.7 - 10;
-            this.barraHpGreenPlayer.width = lunghezzaHpPx * percentuale;
+            this.barraHpGreenPlayer.scaleX = percentuale;
         }
 
         // Shake e flash del player
@@ -834,7 +921,7 @@ export default class ArenaScene extends Phaser.Scene {
         // --- Nomi ---
         // Player: allineato a sinistra
         // Enemy: allineato a destra (setOrigin(1,0) + x = W)
-        const yNomi = 65;
+        const yNomi = 75;
         const nomiStyle = {
             fontFamily: 'Orbitron',
             fontSize: '18px',
@@ -896,6 +983,70 @@ export default class ArenaScene extends Phaser.Scene {
             .setOrigin(1, 0.5)
             .setDepth(2);
 
+        // --- Barra Super Colpo (Viola Neon con bordo Cyan) ---
+        const superBarY = barraY + 22; // Centrata a Y = 62
+        const superBarHeight = 10;
+
+        // Bordo esterno neon cyan
+        this.bordoSuperPlayer = this.add.rectangle(
+            0 + 40 - 2,
+            superBarY,
+            lunghezzaHpPx + 4,
+            superBarHeight + 4,
+            0x8efcff
+        )
+            .setOrigin(0, 0.5)
+            .setDepth(1);
+
+        // Sfondo barra super (viola scurissimo)
+        this.sfondoSuperPlayer = this.add.rectangle(
+            0 + 40,
+            superBarY,
+            lunghezzaHpPx,
+            superBarHeight,
+            0x15002a
+        )
+            .setOrigin(0, 0.5)
+            .setDepth(2);
+
+        // Barra super effettiva (viola elettrico)
+        this.barraSuperPlayer = this.add.rectangle(
+            0 + 40,
+            superBarY,
+            0, // Inizialmente vuota
+            superBarHeight,
+            0xb026ff
+        )
+            .setOrigin(0, 0.5)
+            .setDepth(3);
+
+    }
+
+    aggiornaBarraSuper() {
+        if (this.barraSuperPlayer && this.maxSuperAttackCharge) {
+            const percentuale = this.superAttackCharge / this.maxSuperAttackCharge;
+            const lunghezzaHpPx = 450 * 0.7 - 10;
+            this.barraSuperPlayer.setSize(lunghezzaHpPx * percentuale, this.barraSuperPlayer.height);
+
+            // Effetto lampeggio (glow) se carica al 100%
+            if (this.superAttackCharge >= this.maxSuperAttackCharge) {
+                if (!this.superGlowTween) {
+                    this.superGlowTween = this.tweens.add({
+                        targets: this.barraSuperPlayer,
+                        alpha: 0.4,
+                        duration: 200,
+                        yoyo: true,
+                        repeat: -1
+                    });
+                }
+            } else {
+                if (this.superGlowTween) {
+                    this.superGlowTween.stop();
+                    this.superGlowTween = null;
+                }
+                this.barraSuperPlayer.setAlpha(1);
+            }
+        }
     }
 
     animazioniPlayer(playerState) {

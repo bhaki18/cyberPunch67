@@ -48,7 +48,7 @@ export default class MainMenuScene extends Phaser.Scene {
         this.puoiAggiornareNomeUtente = false;
     }
 
-    init() {
+    init(data) {
         // --- PROPRIETÀ DELLA MAPPA E DEL TILESET
         this.arrayDiLayer = [];
 
@@ -73,6 +73,9 @@ export default class MainMenuScene extends Phaser.Scene {
         // --- STATO DELLA BARRA GIOCATORE HUD
         this.barraGiocatorePuoApparire = false;
         this.puoiAggiornareNomeUtente = false;
+
+        // Ricezione offset dello sfondo dallo scorrimento delle altre scene
+        this.bgScrollX = (data && data.bgScrollX) ? data.bgScrollX : 0;
     }
 
     /**
@@ -133,7 +136,12 @@ export default class MainMenuScene extends Phaser.Scene {
             "space"
         )
             .setScale(9)
-            .setDepth(-2);
+            .setDepth(-2)
+            .setScrollFactor(0);
+
+        if (this.bgScrollX) {
+            this.spaceBg.tilePositionX = this.bgScrollX;
+        }
 
         // Ritardo di 200ms prima di consentire il movimento introduttivo della telecamera
         setTimeout(() => {
@@ -789,7 +797,13 @@ export default class MainMenuScene extends Phaser.Scene {
                 this.animationPlayOnlineCanStart = false;
 
                 this.time.delayedCall(300, () => {
-                    this.scene.start("HubScene", { modalita: modalitaGioco, livelloPlayer: this.livelloPlayer, personaggiTot: this.personaggiTot, nomePlayer: window.player.username });
+                    this.scene.start("HubScene", { 
+                        modalita: modalitaGioco, 
+                        livelloPlayer: this.livelloPlayer, 
+                        personaggiTot: this.personaggiTot, 
+                        nomePlayer: window.player.username,
+                        bgScrollX: this.spaceBg.tilePositionX
+                    });
                 });
             }
         });

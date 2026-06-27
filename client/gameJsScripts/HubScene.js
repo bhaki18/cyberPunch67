@@ -16,9 +16,7 @@ export default class HubScene extends Phaser.Scene {
         this.personaggiTot = data.personaggiTot;
         this.puoiAggiornareIlPersonaggioSelezionato = false;
         this.nomePlayer = data.nomePlayer;
-
-
-
+        this.bgScrollX = data.bgScrollX || 0;
     }
     /**
      * Inizializzazione della grafica e delle interazioni dell'Hub.
@@ -38,7 +36,12 @@ export default class HubScene extends Phaser.Scene {
             "space"
         )
             .setScale(9)
-            .setDepth(-2);
+            .setDepth(-2)
+            .setScrollFactor(0);
+
+        if (this.bgScrollX) {
+            this.sfondoHub.tilePositionX = this.bgScrollX;
+        }
 
 
         this.creaHubOffline();
@@ -88,6 +91,37 @@ export default class HubScene extends Phaser.Scene {
     creaHubOffline() {
         if (this.modalita === "offline") {
             this.oggettiInHub = this.add.container();
+
+            // Bottone Indietro per tornare al MainMenu (stile rettangolo rosso + freccia bianca)
+            const btnTorna = this.add.rectangle(35, 35, 50, 50, 0xff0000)
+                .setOrigin(0.5)
+                .setDepth(10)
+                .setInteractive({ useHandCursor: true });
+
+            const freccia = this.add.graphics()
+                .setPosition(35, 35)
+                .setDepth(11);
+            freccia.lineStyle(5, 0xffffff);
+            freccia.lineBetween(10, 0, -10, 0); // corpo
+            freccia.lineBetween(-10, 0, -2, -8); // punta sopra
+            freccia.lineBetween(-10, 0, -2, 8);  // punta sotto
+
+            this.oggettiInHub.add(btnTorna);
+            this.oggettiInHub.add(freccia);
+
+            btnTorna.on("pointerover", () => {
+                this.tweens.add({ targets: [btnTorna, freccia], scale: 1.1, duration: 100 });
+            });
+
+            btnTorna.on("pointerout", () => {
+                this.tweens.add({ targets: [btnTorna, freccia], scale: 1, duration: 100 });
+            });
+
+            btnTorna.on("pointerup", () => {
+                this.scene.start("MainMenuScene", {
+                    bgScrollX: this.sfondoHub.tilePositionX
+                });
+            });
 
             // Tiene traccia del personaggio selezionato come {frame, sprite, dati}
             // Inizialmente null, viene impostato al primo personaggio sbloccato
@@ -261,6 +295,49 @@ export default class HubScene extends Phaser.Scene {
         if (this.modalita === "online") {
             this.oggettiInHub = this.add.container();
 
+            const comingSoon = this.add.text(400, 250, "ONLINE MODE COMING SOON", {
+                fontFamily: 'Orbitron',
+                fontSize: '36px',
+                fontStyle: 'bold',
+                color: '#8efcff',
+                stroke: '#000000',
+                strokeThickness: 6
+            }).setOrigin(0.5);
+
+            this.oggettiInHub.add(comingSoon);
+
+            // Bottone Indietro per tornare al MainMenu (stile rettangolo rosso + freccia bianca)
+            const btnTorna = this.add.rectangle(35, 35, 50, 50, 0xff0000)
+                .setOrigin(0.5)
+                .setDepth(10)
+                .setInteractive({ useHandCursor: true });
+
+            const freccia = this.add.graphics()
+                .setPosition(35, 35)
+                .setDepth(11);
+            freccia.lineStyle(5, 0xffffff);
+            freccia.lineBetween(10, 0, -10, 0); // corpo
+            freccia.lineBetween(-10, 0, -2, -8); // punta sopra
+            freccia.lineBetween(-10, 0, -2, 8);  // punta sotto
+
+            this.oggettiInHub.add(btnTorna);
+            this.oggettiInHub.add(freccia);
+
+            btnTorna.on("pointerover", () => {
+                this.tweens.add({ targets: [btnTorna, freccia], scale: 1.1, duration: 100 });
+            });
+
+            btnTorna.on("pointerout", () => {
+                this.tweens.add({ targets: [btnTorna, freccia], scale: 1, duration: 100 });
+            });
+
+            btnTorna.on("pointerup", () => {
+                this.scene.start("MainMenuScene", {
+                    bgScrollX: this.sfondoHub.tilePositionX
+                });
+            });
+
+            this.oggettiInHub.setAlpha(0);
         }
     }
 
