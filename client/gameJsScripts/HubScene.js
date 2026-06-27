@@ -5,7 +5,7 @@
  * L'Hub funge da lobby/stanza principale dopo il login. Da qui l'utente può accedere
  * alla ricerca delle partite online, all'inventario, ai potenziamenti e alle opzioni di gioco.
  */
-const socket = window.socket;
+
 
 export default class HubScene extends Phaser.Scene {
     constructor() {
@@ -19,6 +19,7 @@ export default class HubScene extends Phaser.Scene {
         this.puoiAggiornareIlPersonaggioSelezionato = false;
         this.nomePlayer = data.nomePlayer;
         this.bgScrollX = data.bgScrollX || 0;
+        this.socket = window.socket;
     }
     /**
      * Inizializzazione della grafica e delle interazioni dell'Hub.
@@ -295,7 +296,7 @@ export default class HubScene extends Phaser.Scene {
 
     creaHubOnline() {
         if (this.modalita === "online") {
-            socket.emit("joinStanza");
+            this.socket.emit("joinStanza");
             this.oggettiInHub = this.add.container();
 
             const comingSoon = this.add.text(400, 250, "ONLINE MODE COMING SOON", {
