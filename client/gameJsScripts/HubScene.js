@@ -20,6 +20,7 @@ export default class HubScene extends Phaser.Scene {
         this.nomePlayer = data.nomePlayer;
         this.bgScrollX = data.bgScrollX || 0;
         this.socket = window.socket;
+        this.localReady = false;
     }
     /**
      * Inizializzazione della grafica e delle interazioni dell'Hub.
@@ -299,18 +300,217 @@ export default class HubScene extends Phaser.Scene {
             this.socket.emit("joinStanza");
             this.oggettiInHub = this.add.container();
 
-            const comingSoon = this.add.text(400, 250, "ONLINE MODE COMING SOON", {
+            // Sfondo nero semitrasparente per l'Hub Online per renderlo più leggibile
+            const overlaySfocatura = this.add.graphics();
+            overlaySfocatura.fillStyle(0x000000, 0.4);
+            overlaySfocatura.fillRect(0, 0, 800, 600);
+            this.oggettiInHub.add(overlaySfocatura);
+
+            // Divisore Centrale Neon
+            const divisore = this.add.graphics();
+            divisore.lineStyle(4, 0x00f0ff, 0.3);
+            divisore.lineBetween(400, 100, 400, 560);
+            this.oggettiInHub.add(divisore);
+
+            // --- LATO SINISTRO (PLAYER LOCALE) ---
+            // Titolo
+            this.titoloPlayerLocal = this.add.text(200, 95, `${this.nomePlayer.toUpperCase()} (YOU)`, {
                 fontFamily: 'Orbitron',
-                fontSize: '36px',
+                fontSize: '22px',
+                fontStyle: 'bold',
+                color: '#ff007f',
+                stroke: '#000000',
+                strokeThickness: 5
+            }).setOrigin(0.5);
+            this.oggettiInHub.add(this.titoloPlayerLocal);
+
+            // Griglia di selezione personaggi
+            this.onlineFrames = [];
+            this.personaggioSelezionato = null;
+
+            for (let i = 0; i < this.personaggiTot.length; i++) {
+                let col = i % 3;
+                let row = Math.floor(i / 3);
+
+                let frame = this.add.sprite(
+                    75 + col * 75,
+                    180 + row * 110,
+                    "framePgInventory"
+                ).setScale(1.5);
+
+                let personaggioOverFrame = this.add.sprite(
+                    frame.x,
+                    frame.y - 8,
+                    this.personaggiTot[i].nome
+                ).setScale(0.85);
+
+                const bloccato = this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer;
+
+                if (bloccato) {
+                    frame.setTint(0x111111);
+                    personaggioOverFrame.setTint(0x111111);
+                } else {
+                    frame.setInteractive({ pixelPerfect: true });
+
+                    // Pre-seleziona il primo personaggio sbloccato
+                    if (!this.personaggioSelezionato) {
+                        this.personaggioSelezionato = { frame, sprite: personaggioOverFrame, dati: this.personaggiTot[i] };
+                        frame.setTint(0xbbaa00);
+                        personaggioOverFrame.setTint(0xbbaa00);
+                    }
+
+                    frame.on("pointerover", () => {
+                        if (this.localReady) return;
+                        this.tweens.add({ targets: frame, scale: 1.65, duration: 150, ease: "power 2" });
+                        this.tweens.add({ targets: personaggioOverFrame, scale: 1.0, duration: 150, ease: "power 2" });
+                    });
+
+                    frame.on("pointerout", () => {
+                        if (this.localReady) return;
+                        this.tweens.add({ targets: frame, scale: 1.5, duration: 150, ease: "power 2" });
+                        this.tweens.add({ targets: personaggioOverFrame, scale: 0.85, duration: 150, ease: "power 2" });
+                    });
+
+                    frame.on("pointerup", () => {
+                        if (this.localReady) return;
+
+                        if (this.personaggioSelezionato) {
+                            this.personaggioSelezionato.frame.clearTint();
+                            this.personaggioSelezionato.sprite.clearTint();
+                        }
+
+                        frame.setTint(0xbbaa00);
+                        personaggioOverFrame.setTint(0xbbaa00);
+
+                        this.personaggioSelezionato = { frame, sprite: personaggioOverFrame, dati: this.personaggiTot[i] };
+
+                        // Aggiorna anteprima locale grande
+                        this.personaggioInGrandeLocal.setTexture(this.personaggiTot[i].nome);
+                        this.nomeLocalPgText.setText(this.personaggiTot[i].nome.toUpperCase());
+
+                        // Comunica la selezione al server
+                        this.socket.emit("onlineSelectCharacter", { characterName: this.personaggiTot[i].nome });
+                    });
+                }
+
+                this.oggettiInHub.add(frame);
+                this.oggettiInHub.add(personaggioOverFrame);
+                this.onlineFrames.push({ frame, sprite: personaggioOverFrame, dati: this.personaggiTot[i] });
+            }
+
+            // Sprite grande locale
+            const defaultPg = this.personaggioSelezionato ? this.personaggioSelezionato.dati.nome : "Dominant Red";
+            this.personaggioInGrandeLocal = this.add.sprite(310, 250, defaultPg).setScale(4).setOrigin(0.5);
+            this.oggettiInHub.add(this.personaggioInGrandeLocal);
+
+            this.nomeLocalPgText = this.add.text(310, 390, defaultPg.toUpperCase(), {
+                fontFamily: 'Orbitron',
+                fontSize: '24px',
                 fontStyle: 'bold',
                 color: '#8efcff',
                 stroke: '#000000',
-                strokeThickness: 6
+                strokeThickness: 4
             }).setOrigin(0.5);
+            this.oggettiInHub.add(this.nomeLocalPgText);
 
-            this.oggettiInHub.add(comingSoon);
+            // Stato Pronto locale
+            this.localReadyStatusText = this.add.text(200, 440, "NOT READY", {
+                fontFamily: 'Orbitron',
+                fontSize: '20px',
+                fontStyle: 'bold',
+                color: '#ff0000',
+                stroke: '#000000',
+                strokeThickness: 4
+            }).setOrigin(0.5);
+            this.oggettiInHub.add(this.localReadyStatusText);
 
-            // Bottone Indietro per tornare al MainMenu (stile rettangolo rosso + freccia bianca)
+            this.tastoProntoOnline = this.add.sprite(200, 510, "tastoPronto").setScale(0.85);
+            this.tastoProntoOnline.setInteractive({ useHandCursor: true });
+            this.oggettiInHub.add(this.tastoProntoOnline);
+
+            this.tastoProntoOnline.on("pointerover", () => {
+                if (this.localReady) return;
+                this.tweens.add({ targets: this.tastoProntoOnline, scale: 0.95, duration: 150 });
+            });
+            this.tastoProntoOnline.on("pointerout", () => {
+                if (this.localReady) return;
+                this.tweens.add({ targets: this.tastoProntoOnline, scale: 0.85, duration: 150 });
+            });
+            this.tastoProntoOnline.on("pointerup", () => {
+                if (this.localReady) return;
+
+                this.localReady = true;
+                this.localReadyStatusText.setText("READY").setColor("#00ff00");
+                this.tastoProntoOnline.setTint(0x555555);
+
+                // Disabilita interattività della griglia locale
+                this.onlineFrames.forEach(f => {
+                    f.frame.disableInteractive();
+                });
+
+                // Comunica lo stato di pronto al server
+                this.socket.emit("onlineSetReady", { ready: true });
+            });
+
+
+            // --- LATO DESTRO (AVVERSARIO) ---
+            // Titolo
+            this.titoloOpponent = this.add.text(600, 95, "WAITING FOR OPPONENT...", {
+                fontFamily: 'Orbitron',
+                fontSize: '20px',
+                fontStyle: 'bold',
+                color: '#00f0ff',
+                stroke: '#000000',
+                strokeThickness: 5
+            }).setOrigin(0.5);
+            this.oggettiInHub.add(this.titoloOpponent);
+
+            // Sprite grande dell'avversario (invisibile finché non si unisce)
+            this.personaggioInGrandeOpponent = this.add.sprite(600, 250, "Dominant Red").setScale(4).setOrigin(0.5).setVisible(false);
+            this.oggettiInHub.add(this.personaggioInGrandeOpponent);
+
+            this.nomeOpponentPgText = this.add.text(600, 390, "", {
+                fontFamily: 'Orbitron',
+                fontSize: '24px',
+                fontStyle: 'bold',
+                color: '#ff007f',
+                stroke: '#000000',
+                strokeThickness: 4
+            }).setOrigin(0.5);
+            this.oggettiInHub.add(this.nomeOpponentPgText);
+
+            // Stato Pronto dell'avversario
+            this.opponentReadyStatusText = this.add.text(600, 440, "", {
+                fontFamily: 'Orbitron',
+                fontSize: '20px',
+                fontStyle: 'bold',
+                color: '#ff0000',
+                stroke: '#000000',
+                strokeThickness: 4
+            }).setOrigin(0.5);
+            this.oggettiInHub.add(this.opponentReadyStatusText);
+
+
+            // --- CENTRO / IN ALTO (INFO STANZA & TIMER) ---
+            this.roomIdText = this.add.text(400, 20, "ROOM: CONNECTING...", {
+                fontFamily: 'Share Tech Mono',
+                fontSize: '14px',
+                color: 'rgba(255, 255, 255, 0.4)'
+            }).setOrigin(0.5);
+            this.oggettiInHub.add(this.roomIdText);
+
+            this.countdownText = this.add.text(400, 50, "WAITING...", {
+                fontFamily: 'Orbitron',
+                fontSize: '26px',
+                fontStyle: 'bold',
+                color: '#fcee0a',
+                stroke: '#000000',
+                strokeThickness: 5
+            }).setOrigin(0.5);
+            this.oggettiInHub.add(this.countdownText);
+
+
+            // --- BOTTONE TORNA INDIETRO (STILE RETTANGOLO ROSSO + FRECCIA) ---
             const btnTorna = this.add.rectangle(35, 35, 50, 50, 0xff0000)
                 .setOrigin(0.5)
                 .setDepth(10)
@@ -336,12 +536,129 @@ export default class HubScene extends Phaser.Scene {
             });
 
             btnTorna.on("pointerup", () => {
+                this.rimuoviSocketListeners();
+                this.socket.emit("leaveStanza"); // Notifica il server per uscire dalla stanza
                 this.scene.start("MainMenuScene", {
                     bgScrollX: this.sfondoHub.tilePositionX
                 });
             });
 
+
+            // --- PROTOCOLLO SOCKET.IO LISTENERS ---
+            this.socket.on("joinedStanza", (data) => {
+                this.roomIdText.setText(`ROOM: ${data.id}`);
+            });
+
+            this.socket.on("roomReady", (data) => {
+                const avversario = data.players.find(p => p !== this.nomePlayer) || "Guest";
+                this.titoloOpponent.setText(avversario.toUpperCase());
+
+                this.personaggioInGrandeOpponent.setVisible(true).setTexture("Dominant Red");
+                this.nomeOpponentPgText.setText("DOMINANT RED");
+                this.opponentReadyStatusText.setText("NOT READY").setColor("#ff0000");
+
+                // Invia la pre-selezione iniziale
+                if (this.personaggioSelezionato) {
+                    this.socket.emit("onlineSelectCharacter", { characterName: this.personaggioSelezionato.dati.nome });
+                }
+            });
+
+            this.socket.on("opponentSelectedCharacter", (data) => {
+                this.personaggioInGrandeOpponent.setVisible(true);
+                this.personaggioInGrandeOpponent.setTexture(data.personaggio);
+                this.nomeOpponentPgText.setText(data.personaggio.toUpperCase());
+
+                // Animazione di rimbalzo premium per indicare visivamente il cambio
+                this.personaggioInGrandeOpponent.setScale(0);
+                this.tweens.add({
+                    targets: this.personaggioInGrandeOpponent,
+                    scale: 4,
+                    duration: 250,
+                    ease: "Back.easeOut"
+                });
+            });
+
+            this.socket.on("opponentReady", (data) => {
+                if (data.ready) {
+                    this.opponentReadyStatusText.setText("READY").setColor("#00ff00");
+                } else {
+                    this.opponentReadyStatusText.setText("NOT READY").setColor("#ff0000");
+                }
+            });
+
+            this.socket.on("timerTick", (tempoRimasto) => {
+                this.countdownText.setText(`TIME: ${tempoRimasto}S`);
+            });
+
+            this.socket.on("startMatch", (data) => {
+                this.rimuoviSocketListeners();
+
+                const mioPersonaggioNome = this.personaggioSelezionato ? this.personaggioSelezionato.dati.nome : "Dominant Red";
+                const avversarioNome = data.players.find(p => p !== this.nomePlayer) || "Guest";
+                const avversarioPersonaggioNome = data.selezioni[avversarioNome] || "Dominant Red";
+
+                const mioPgDati = this.personaggiTot.find(p => p.nome === mioPersonaggioNome);
+                const avversarioPgDati = this.personaggiTot.find(p => p.nome === avversarioPersonaggioNome);
+
+                this.scene.start("ArenaScene", {
+                    modalita: "online",
+                    roomId: data.roomId,
+                    mioPersonaggio: { nome: mioPersonaggioNome, dati: mioPgDati },
+                    avversarioPersonaggio: { nome: avversarioPersonaggioNome, dati: avversarioPgDati },
+                    nomePlayer: this.nomePlayer,
+                    nomeOpponent: avversarioNome,
+                    livelloPlayer: this.livelloPlayer,
+                    personaggiTot: this.personaggiTot
+                });
+            });
+
+            this.socket.on("playerDisconnected", (data) => {
+                // Resetta lo stato dell'avversario se se ne va
+                this.titoloOpponent.setText("WAITING FOR OPPONENT...");
+                this.personaggioInGrandeOpponent.setVisible(false);
+                this.nomeOpponentPgText.setText("");
+                this.opponentReadyStatusText.setText("");
+                this.countdownText.setText("WAITING...");
+
+                // Ripristina l'interattività se eravamo pronti
+                this.localReady = false;
+                this.localReadyStatusText.setText("NOT READY").setColor("#ff0000");
+                this.tastoProntoOnline.clearTint();
+
+                this.onlineFrames.forEach(f => {
+                    const bloccato = f.dati.livelloDiUnlock > this.livelloPlayer;
+                    if (!bloccato) f.frame.setInteractive({ pixelPerfect: true });
+                });
+            });
+
+            // Gestore di chiusura scheda/finestra
+            this.onBeforeUnload = () => {
+                this.socket.emit("leaveStanza");
+            };
+            window.addEventListener("beforeunload", this.onBeforeUnload);
+
+            // Gestore di spegnimento della scena per evitare leak di listener
+            this.events.once("shutdown", () => {
+                this.rimuoviSocketListeners();
+            });
+
             this.oggettiInHub.setAlpha(0);
+        }
+    }
+
+    rimuoviSocketListeners() {
+        if (this.socket) {
+            this.socket.off("joinedStanza");
+            this.socket.off("roomReady");
+            this.socket.off("opponentSelectedCharacter");
+            this.socket.off("opponentReady");
+            this.socket.off("timerTick");
+            this.socket.off("startMatch");
+            this.socket.off("playerDisconnected");
+        }
+        if (this.onBeforeUnload) {
+            window.removeEventListener("beforeunload", this.onBeforeUnload);
+            this.onBeforeUnload = null;
         }
     }
 

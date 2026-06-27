@@ -15,8 +15,9 @@ function generaIdStanza() {
  * Cerca una stanza con un solo giocatore. Se la trova, il player vi si unisce.
  * Altrimenti, crea una nuova stanza.
  * @param {import("socket.io").Socket} socket
+ * @param {import("socket.io").Server} io
  */
-function joinaStanza(socket) {
+function joinaStanza(socket, io) {
     const username = socket.player ? socket.player.username : "Guest";
     let stanzaTrovata = null;
 
@@ -34,6 +35,8 @@ function joinaStanza(socket) {
         stanzaTrovata.playersJoined++;
         stanzaTrovata.nomiPlayer.push(username);
         stanzaTrovata.sockets.push(socket);
+        stanzaTrovata.selezioni[username] = "Dominant Red"; // Default pre-selezionato
+        stanzaTrovata.pronto[username] = false;
 
         socket.join(stanzaTrovata.id);
         socket.roomId = stanzaTrovata.id;
@@ -50,6 +53,10 @@ function joinaStanza(socket) {
                 players: stanzaTrovata.nomiPlayer
             });
         });
+
+        // Avvia il timer di 1 minuto gestito dal server
+        avviaTimerStanza(stanzaTrovata, io);
+
     } else {
         // Crea una nuova stanza
         const nuovoId = generaIdStanza();
@@ -58,6 +65,8 @@ function joinaStanza(socket) {
         nuovaStanza.playersJoined = 1;
         nuovaStanza.nomiPlayer.push(username);
         nuovaStanza.sockets.push(socket);
+        nuovaStanza.selezioni[username] = "Dominant Red"; // Default pre-selezionato
+        nuovaStanza.pronto[username] = false;
 
         stanze[nuovoId] = nuovaStanza;
 
@@ -79,8 +88,107 @@ function creaNuovaStanza(id) {
         id: id,
         playersJoined: 0,
         nomiPlayer: [],
-        sockets: [] // Mantiene i riferimenti alle socket per comunicare direttamente
+        sockets: [], // Mantiene i riferimenti alle socket per comunicare direttamente
+        selezioni: {}, // Mappa username -> nome personaggio selezionato
+        pronto: {}, // Mappa username -> boolean pronto
+        timer: null,
+        tempoRimasto: 60
     };
+}
+
+/**
+ * Avvia il conto alla rovescia di 60 secondi gestito dal server
+ * @param {any} stanza
+ * @param {import("socket.io").Server} io
+ */
+function avviaTimerStanza(stanza, io) {
+    if (stanza.timer) return; // Già avviato
+
+    stanza.tempoRimasto = 60;
+    io.to(stanza.id).emit("timerTick", stanza.tempoRimasto);
+
+    stanza.timer = setInterval(() => {
+        stanza.tempoRimasto--;
+        io.to(stanza.id).emit("timerTick", stanza.tempoRimasto);
+
+        if (stanza.tempoRimasto <= 0) {
+            clearInterval(stanza.timer);
+            stanza.timer = null;
+            console.log(`[RoomManager] Timer scaduto per la stanza ${stanza.id}. Avvio forzato del match.`);
+            avviaMatch(stanza, io);
+        }
+    }, 1000);
+}
+
+/**
+ * Gestisce la selezione del personaggio da parte di un player
+ * @param {import("socket.io").Socket} socket
+ * @param {string} personaggioNome
+ */
+function selezionaPersonaggio(socket, personaggioNome) {
+    const roomId = socket.roomId;
+    if (!roomId || !stanze[roomId]) return;
+
+    const stanza = stanze[roomId];
+    const username = socket.player ? socket.player.username : "Guest";
+
+    stanza.selezioni[username] = personaggioNome;
+
+    // Invia la selezione all'avversario
+    socket.to(roomId).emit("opponentSelectedCharacter", {
+        personaggio: personaggioNome
+    });
+    console.log(`[RoomManager] Player ${username} in ${roomId} selected ${personaggioNome}`);
+}
+
+/**
+ * Gestisce lo stato di "pronto" del player
+ * @param {import("socket.io").Socket} socket
+ * @param {boolean} ready
+ * @param {import("socket.io").Server} io
+ */
+function impostaPronto(socket, ready, io) {
+    const roomId = socket.roomId;
+    if (!roomId || !stanze[roomId]) return;
+
+    const stanza = stanze[roomId];
+    const username = socket.player ? socket.player.username : "Guest";
+
+    stanza.pronto[username] = ready;
+
+    // Comunica all'avversario che il player è pronto
+    socket.to(roomId).emit("opponentReady", { ready });
+    console.log(`[RoomManager] Player ${username} in ${roomId} set ready: ${ready}`);
+
+    // Controlla se tutti i giocatori uniti (esattamente 2) sono pronti
+    const tuttiPronti = stanza.playersJoined === 2 &&
+                        stanza.nomiPlayer.every(name => stanza.pronto[name] === true);
+
+    if (tuttiPronti) {
+        avviaMatch(stanza, io);
+    }
+}
+
+/**
+ * Avvia il match inviando l'evento startMatch a entrambi i giocatori
+ * @param {any} stanza
+ * @param {import("socket.io").Server} io
+ */
+function avviaMatch(stanza, io) {
+    // Pulisce il timer se attivo
+    if (stanza.timer) {
+        clearInterval(stanza.timer);
+        stanza.timer = null;
+    }
+
+    console.log(`[RoomManager] Starting online match for room ${stanza.id}`);
+
+    // Invia i dati di avvio a entrambi i giocatori
+    io.to(stanza.id).emit("startMatch", {
+        roomId: stanza.id,
+        players: stanza.nomiPlayer,
+        selezioni: stanza.selezioni
+    });
 }
 
 /**
@@ -94,10 +202,20 @@ function disconnettiPlayer(socket) {
     const stanza = stanze[roomId];
     const username = socket.player ? socket.player.username : "Guest";
 
+    // Pulisce il timer
+    if (stanza.timer) {
+        clearInterval(stanza.timer);
+        stanza.timer = null;
+    }
+
     // Rimuove la socket e il nome del player disconnesso
     stanza.sockets = stanza.sockets.filter((s) => s.id !== socket.id);
     stanza.nomiPlayer = stanza.nomiPlayer.filter((name) => name !== username);
     stanza.playersJoined = stanza.sockets.length;
+
+    // Rimuove selezioni e pronto
+    delete stanza.selezioni[username];
+    delete stanza.pronto[username];
 
     console.log(`[RoomManager] Player ${username} disconnected from room ${roomId}. Remaining: ${stanza.playersJoined}`);
 
@@ -111,11 +229,15 @@ function disconnettiPlayer(socket) {
             s.emit("playerDisconnected", { username });
         });
     }
+
+    socket.roomId = null;
 }
 
 module.exports = {
     stanze,
     joinaStanza,
     creaNuovaStanza,
+    selezionaPersonaggio,
+    impostaPronto,
     disconnettiPlayer
 };
