@@ -5,6 +5,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 
 const { connectDB, LoginPlayer, CreaPlayer, GetPlayerById } = require("../database/database");
+const { joinaStanza, disconnettiPlayer } = require("./roomManager");
 
 const PORT = process.env.PORT || 3000;
 
@@ -105,8 +106,14 @@ io.on("connection", (socket) => {
 
   socket.emit("playerLoggato", socket.player);
 
+  socket.on("joinStanza", () => {
+    joinaStanza(socket);
+    console.log("il player:" + socket.user.username + " si è unito a una stanza");
+  });
+
   socket.on("disconnect", () => {
     console.log("Logout:", socket.user.username);
+    disconnettiPlayer(socket);
   });
 
 });
