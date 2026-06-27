@@ -37,13 +37,34 @@ export default class PreloadScene extends Phaser.Scene {
         this.loadArena();
 
         // --- 3. CREAZIONE DELLA BARRA DI CARICAMENTO GRAFICA (PHASER GRAPHICS)
+        // --- 1. SFONDO E PARTICELLE (CARICATI DA BOOTSCENE) ---
+        this.backgroundPreloadingScene = this.add.sprite(400, 300, "sfondoPreloadScene")
+            .setScale(9)
+            .setDepth(-2);
+        this.OggettiInPreloadScene.push(this.backgroundPreloadingScene);
+
+        const particellaBg = [];
+        const numeroDiParticelle = 25;
+        for (let i = 0; i < numeroDiParticelle; i++) {
+            const particella = this.add.image(
+                Phaser.Math.Between(1, 800),
+                Phaser.Math.Between(1, 600),
+                "particellaSfondo"
+            )
+                .setScale(0.3)
+                .setDepth(-1);
+            particellaBg.push(particella);
+            this.OggettiInPreloadScene.push(particella);
+        }
+        this.parecelleSfondo = particellaBg;
+
         const x = this.cameras.main.centerX;
         const y = this.cameras.main.centerY;
         const width = 400;
 
-        // Inizializza i due livelli grafici (background nero e fill colorato)
-        this.backgroundLineaDiCaricamento = this.add.graphics().setDepth(1).setAlpha(0);
-        this.fillLineaDiCaricamento = this.add.graphics().setDepth(2).setAlpha(0);
+        // Inizializza i due livelli grafici (background nero e fill colorato) a piena opacità
+        this.backgroundLineaDiCaricamento = this.add.graphics().setDepth(1);
+        this.fillLineaDiCaricamento = this.add.graphics().setDepth(2);
 
         // Registra gli oggetti per le dissolvenze finali
         this.OggettiInPreloadScene.push(this.backgroundLineaDiCaricamento, this.fillLineaDiCaricamento);
@@ -63,7 +84,6 @@ export default class PreloadScene extends Phaser.Scene {
             color: "#66ffff",
             letterSpacing: 2
         })
-            .setAlpha(0)
             .setOrigin(0.5)
             .setDepth(3);
 
@@ -130,27 +150,6 @@ export default class PreloadScene extends Phaser.Scene {
      * Inizializzazione della grafica di sfondo e avvio delle particelle.
      */
     create() {
-        // Render dello sprite di sfondo
-        const bg = this.add.sprite(400, 300, "sfondoPreloadScene")
-            .setScale(9)
-            .setDepth(-2);
-
-        // Setup del sistema di particelle spaziali mobili
-        const particellaBg = [];
-        const numeroDiParticelle = 25;
-        for (let i = 0; i < numeroDiParticelle; i++) {
-            const particella = this.add.image(
-                Phaser.Math.Between(1, 800),
-                Phaser.Math.Between(1, 600),
-                "particellaSfondo"
-            )
-                .setScale(0.3)
-                .setDepth(-1);
-            particellaBg.push(particella);
-        }
-
-        this.parecelleSfondo = particellaBg;
-
         // Registrazione dell'animazione ciclica dello sfondo spaziale
         this.anims.create({
             key: "animsSfondo",
@@ -163,33 +162,17 @@ export default class PreloadScene extends Phaser.Scene {
         });
 
         // Avvio animazione dello sfondo
-        bg.play("animsSfondo");
+        this.backgroundPreloadingScene.play("animsSfondo");
 
-        // Associazione degli elementi all'array globale per la gestione delle dissolvenze
-        this.parecelleSfondo.forEach(a => {
-            this.OggettiInPreloadScene.push(a);
-        });
-
-        this.OggettiInPreloadScene.push(bg);
-
-        // Imposta inizialmente a zero l'opacità di tutti gli elementi
-        this.OggettiInPreloadScene.forEach(a => {
-            a.setAlpha(this.alphaOggettiInPreloadScene);
-        });
-
-        this.OggettiInPreloadSceneAnimation2.forEach(a => {
-            a.setAlpha(this.alphaOggettiInPreloadSceneAnimation2);
-        });
-
-        // Trigger di inizio animazione di ingresso
-        setTimeout(() => {
-            this.animationPreloadScene1CanStart = true;
-        }, 300);
-
-        this.backgroundPreloadingScene = bg;
+        // Poiché gli oggetti sono già visibili a schermo durante il caricamento,
+        // impostiamo alpha a 1 e passiamo direttamente alla visualizzazione di "CLICK TO START"
+        this.alphaOggettiInPreloadScene = 1;
+        this.animationPreloadScene2CanStart = true;
 
         // Registrazione delle animazioni del personaggio principale (Dominant Red) nel MainMenu
         this.createAnimationMainMenu();
+        // registrazione delle animazioni dei personaggi
+        this.createAnimationPersonaggi();
     }
 
     /**
@@ -365,6 +348,16 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.personaggi.forEach(personaggio => {
             this.load.image(personaggio.nome, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}.png`);
+            this.load.image(`${personaggio.nome}falling`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Falling.png`);
+            this.load.image(`${personaggio.nome}attacking1`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Attacking1.png`);
+            this.load.image(`${personaggio.nome}attacking2`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Attacking2.png`);
+            this.load.image(`${personaggio.nome}standing`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Standing.png`);
+            this.load.spritesheet(`${personaggio.nome}walking`, `../assets/InventoryScene/personaggi/${personaggio.nomeImgRef}/${personaggio.nomeImgRef}Walking.png`,
+                {
+                    frameWidth: 64,
+                    frameHeight: 103
+                }
+            )
         });
 
 
@@ -386,5 +379,51 @@ export default class PreloadScene extends Phaser.Scene {
             frameWidth: 576,
             frameHeight: 324
         });
+    }
+
+
+    createAnimationPersonaggi() {
+        this.personaggi.forEach(personaggio => {
+            this.anims.create({
+                key: `${personaggio.nome}walking`,
+                frames: this.anims.generateFrameNumbers(`${personaggio.nome}walking`, {
+                    start: 0,
+                    end: 4
+                }),
+                frameRate: 5,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: `${personaggio.nome}falling`,
+                frames: [{ key: `${personaggio.nome}falling` }],
+                frameRate: 1,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: `${personaggio.nome}attacking1`,
+                frames: [{ key: `${personaggio.nome}attacking1` }],
+                frameRate: 1,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: `${personaggio.nome}attacking2`,
+                frames: [{ key: `${personaggio.nome}attacking2` }],
+                frameRate: 1,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: `${personaggio.nome}standing`,
+                frames: [{ key: `${personaggio.nome}standing` }],
+                frameRate: 1,
+                repeat: -1
+            });
+
+
+        })
+
     }
 }

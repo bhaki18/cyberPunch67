@@ -25,6 +25,8 @@ export default class ArenaScene extends Phaser.Scene {
         this.puoiAnimareLoSfondo = false;
         this.playerCanMove = false;
         this.canJump = false;
+        this.playerState = "";
+        this.animationCounter = 0;
     }
 
     /**
@@ -57,6 +59,7 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (this.modalita === "offline") {
             this.playerMovesOffline();
+            this.animazioniPlayer(this.playerState);
         }
     }
 
@@ -188,7 +191,7 @@ export default class ArenaScene extends Phaser.Scene {
             spawnX,
             spawnY,
             this.personaggioPlayer.dati.nome
-        );
+        ).setOrigin(0.5, 1);
         this.player.setCollideWorldBounds(true);
         // Gravità positiva verso il basso per consentire il salto
         this.player.body.setGravityY(500);
@@ -200,6 +203,10 @@ export default class ArenaScene extends Phaser.Scene {
         const bodyH = this.player.height * 0.85;
         const offX = (this.player.width - bodyW) / 2;
         const offY = (this.player.height - bodyH);
+
+        this.playerBodyW = bodyW;
+        this.playerBodyH = bodyH;
+
         this.player.body.setSize(bodyW, bodyH, false);
         this.player.body.setOffset(offX, offY);
 
@@ -208,6 +215,7 @@ export default class ArenaScene extends Phaser.Scene {
             spawnY,
             this.personaggioPlayer.dati.nome
         )
+            .setOrigin(0.5, 1)
             .setFlipX(true)
             .setTint(0xff0000);
         this.NPC.setCollideWorldBounds(true);
@@ -254,23 +262,46 @@ export default class ArenaScene extends Phaser.Scene {
     playerMovesOffline() {
         if (!this.playerCanMove || !this.player) return;
 
+        const playerMoves = {
+            walking: "walking",
+            falling: "falling",
+            jumping: "jumping",
+            standing: "standing"
+        };
+
         const speed = 200;
+        const isGrounded = this.player.body.blocked.down || this.player.body.touching.down;
 
         // --- Movimento orizzontale ---
         if (this.inputManager.right.isDown) {
             this.player.setVelocityX(speed);
             this.player.setFlipX(false);
+
+            if (isGrounded) {
+                this.playerState = playerMoves.walking;
+            }
+
+
+
         } else if (this.inputManager.left.isDown) {
             this.player.setVelocityX(-speed);
             this.player.setFlipX(true);
+
+            if (isGrounded) {
+                this.playerState = playerMoves.walking;
+            }
         } else {
             // Nessun tasto premuto: ferma il player orizzontalmente
             this.player.setVelocityX(0);
+
+            if (isGrounded) {
+                this.playerState = playerMoves.standing;
+            }
         }
 
         // --- Doppio Salto ---
         // Quando il player tocca terra, ricarica i salti disponibili
-        if (this.player.body.blocked.down) {
+        if (isGrounded) {
             this.jumpsLeft = 2;
         }
 
@@ -281,16 +312,32 @@ export default class ArenaScene extends Phaser.Scene {
             this.jumpsLeft--;
         }
 
+        // --- Airborne State Detection ---
+        if (!isGrounded) {
+            if (this.player.body.velocity.y < -50) {
+                this.playerState = playerMoves.jumping;
+            } else if (this.player.body.velocity.y > 50) {
+                this.playerState = playerMoves.falling;
+            }
+        }
+
         this.playerAttacksOffline();
     }
 
     playerAttacksOffline() {
+
+        const playerAttacks = {
+            attack1: "attacking1",
+            attack2: "attacking2",
+            superAttack: "superAttacking"
+        };
 
 
         if (Phaser.Input.Keyboard.JustDown(this.inputManager.attack1)) {
             if (this.playerCanAttack) {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
+                this.playerState = playerAttacks.attack1;
             }
         }
 
@@ -298,6 +345,7 @@ export default class ArenaScene extends Phaser.Scene {
             if (this.playerCanAttack) {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
+                this.playerState = playerAttacks.attack2;
             }
         }
 
@@ -305,6 +353,7 @@ export default class ArenaScene extends Phaser.Scene {
             if (this.playerCanAttack) {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
+                this.playerState = playerAttacks.superAttack;
             }
         }
 
@@ -379,10 +428,10 @@ export default class ArenaScene extends Phaser.Scene {
 
         const redRectHpEnemy = this.add.rectangle(
             W - 40,
-            barraY,
+            barraY - 3,
             lunghezzaHpPx,
             altezzaHpPx,
-            0xff00000
+            0xff0000
         )
             .setOrigin(1, 0.5)
             .setDepth(1);
@@ -401,13 +450,80 @@ export default class ArenaScene extends Phaser.Scene {
 
         this.barraHpGreenEnemy = this.add.rectangle(
             W - 40,
-            barraY,
+            barraY - 3,
             lunghezzaHpPx,
             altezzaHpPx,
-            0x00ff000
+            0x00ff00
         )
             .setOrigin(1, 0.5)
             .setDepth(2);
 
+    }
+
+    animazioniPlayer(playerState) {
+        if (!this.player) return;
+
+        // Reapply the locked body size and offset on every frame to prevent Phaser from resetting it on frame changes,
+        // dynamically calculating the offsets based on the current frame's dimensions.
+        if (this.playerBodyW && this.playerBodyH) {
+            const currentOffX = (this.player.width - this.playerBodyW) / 2;
+            const currentOffY = this.player.height - this.playerBodyH;
+            this.player.body.setSize(this.playerBodyW, this.playerBodyH, false);
+            this.player.body.setOffset(currentOffX, currentOffY);
+        }
+
+        if (this.animationCounter > 0) {
+            this.animationCounter--;
+            return;
+        }
+
+        const delayAnimation = 30; // fps di attesa
+        let animation = `${this.personaggioPlayer.dati.nome}standing`;
+
+        switch (playerState) {
+            case "walking":
+                animation = `${this.personaggioPlayer.dati.nome}walking`;
+                this.player.setScale(64 / 103);
+                break;
+            case "falling":
+                animation = `${this.personaggioPlayer.dati.nome}falling`;
+
+                break;
+            case "jumping":
+                if (this.anims.exists(`${this.personaggioPlayer.dati.nome}jumping`)) {
+                    animation = `${this.personaggioPlayer.dati.nome}jumping`;
+                } else {
+                    animation = `${this.personaggioPlayer.dati.nome}falling`;
+                }
+                break;
+            case "attacking1":
+                animation = `${this.personaggioPlayer.dati.nome}attacking1`;
+                this.animationCounter = delayAnimation;
+                break;
+            case "attacking2":
+                animation = `${this.personaggioPlayer.dati.nome}attacking2`;
+                this.animationCounter = delayAnimation;
+                break;
+            case "superAttacking":
+                animation = `${this.personaggioPlayer.dati.nome}superAttacking`;
+                this.animationCounter = delayAnimation * 2;
+                break;
+            case "standing":
+            default:
+                animation = `${this.personaggioPlayer.dati.nome}standing`;
+                break;
+        }
+
+        if (this.player.anims.isPlaying && this.player.anims.currentAnim && this.player.anims.currentAnim.key === animation) {
+            return;
+        }
+
+
+        this.player.anims.play(animation, true);
+        if (animation === "walking") {
+            this.player.setScale(64 / 103);
+        } else {
+            this.player.setScale(1);
+        }
     }
 }

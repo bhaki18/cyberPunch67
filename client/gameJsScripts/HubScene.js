@@ -233,7 +233,7 @@ export default class HubScene extends Phaser.Scene {
             this.tastoProntoOffline.on("pointerup", () => {
                 this.tweens.add({
                     targets: this.tastoProntoOffline,
-                    y: this.tastoProntoOffline + 10,
+                    y: this.tastoProntoOffline.y + 10,
                     tint: 0x000000,
                     duration: 100,
                     ease: "power 4",
