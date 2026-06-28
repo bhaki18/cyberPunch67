@@ -16,11 +16,22 @@ export default class ArenaScene extends Phaser.Scene {
 
     init(data) {
         this.modalita = data.modalita;
-        this.personaggioPlayer = data.personaggioSelezionato;
+        this.personaggioPlayer = this.modalita === "online" ? data.mioPersonaggio : data.personaggioSelezionato;
         this.playerName = data.nomePlayer;
         this.livelloPlayer = data.livelloPlayer;
         this.personaggiTot = data.personaggiTot;
-        console.log(this.personaggioPlayer);
+        
+        if (this.modalita === "online") {
+            this.roomId = data.roomId;
+            this.isPlayer1 = data.isPlayer1;
+            this.arenaIndex = data.arenaIndex;
+            this.avversarioPersonaggio = data.avversarioPersonaggio;
+            this.nomeOpponent = data.nomeOpponent;
+            this.socket = window.socket;
+            this.npcCharacterName = this.avversarioPersonaggio.dati.nome;
+        } else {
+            this.npcCharacterName = this.personaggioPlayer.dati.nome;
+        }
 
         this.arrayDiAreneESfondiDelleArene = caricaArene();
 
@@ -30,7 +41,7 @@ export default class ArenaScene extends Phaser.Scene {
         this.playerState = "";
         this.animationCounter = 0;
 
-        // Inizializzazione variabili NPC
+        // Inizializzazione variabili NPC/Opponent
         this.npcState = "";
         this.npcAttackCounter = 0;
         this.npcCooldownCounter = 0;
@@ -65,6 +76,8 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (this.modalita === "offline") {
             this.offlineModGameCreate();
+        } else if (this.modalita === "online") {
+            this.onlineModGameCreate();
         }
     }
 
@@ -81,6 +94,22 @@ export default class ArenaScene extends Phaser.Scene {
 
             this.npcBehaviorOffline();
             this.animazioniNPC(this.npcState);
+        } else if (this.modalita === "online") {
+            this.playerMovesOnline();
+            this.animazioniPlayer(this.playerState);
+            this.animazioniNPC(this.npcState);
+
+            // Invia dati di movimento e animazione se abilitato
+            if (this.playerCanMove && this.player && this.socket) {
+                this.socket.emit("playerUpdate", {
+                    x: this.player.x,
+                    y: this.player.y,
+                    vx: this.player.body.velocity.x,
+                    vy: this.player.body.velocity.y,
+                    flipX: this.player.flipX,
+                    state: this.playerState
+                });
+            }
         }
 
         this.salvaStatoGamepadPrecedente();
@@ -830,38 +859,38 @@ export default class ArenaScene extends Phaser.Scene {
         }
 
         const delayAnimation = 30;
-        let animation = `${this.personaggioPlayer.dati.nome}standing`;
+        let animation = `${this.npcCharacterName}standing`;
         let targetScale = 1;
 
         switch (npcState) {
             case "walking":
-                animation = `${this.personaggioPlayer.dati.nome}walking`;
+                animation = `${this.npcCharacterName}walking`;
                 targetScale = 64 / 103;
                 break;
             case "falling":
-                animation = `${this.personaggioPlayer.dati.nome}falling`;
+                animation = `${this.npcCharacterName}falling`;
                 break;
             case "jumping":
-                if (this.anims.exists(`${this.personaggioPlayer.dati.nome}jumping`)) {
-                    animation = `${this.personaggioPlayer.dati.nome}jumping`;
+                if (this.anims.exists(`${this.npcCharacterName}jumping`)) {
+                    animation = `${this.npcCharacterName}jumping`;
                     targetScale = 0.5;
                 } else {
-                    animation = `${this.personaggioPlayer.dati.nome}falling`;
+                    animation = `${this.npcCharacterName}falling`;
                 }
                 break;
             case "attacking1":
-                animation = `${this.personaggioPlayer.dati.nome}attacking1`;
+                animation = `${this.npcCharacterName}attacking1`;
                 break;
             case "attacking2":
-                animation = `${this.personaggioPlayer.dati.nome}attacking2`;
+                animation = `${this.npcCharacterName}attacking2`;
                 break;
             case "superAttacking":
-                animation = `${this.personaggioPlayer.dati.nome}superAttacking`;
+                animation = `${this.npcCharacterName}superAttacking`;
                 targetScale = 0.5;
                 break;
             case "standing":
             default:
-                animation = `${this.personaggioPlayer.dati.nome}standing`;
+                animation = `${this.npcCharacterName}standing`;
                 break;
         }
 
@@ -1130,6 +1159,438 @@ export default class ArenaScene extends Phaser.Scene {
             const currentOffY = this.player.height - targetH;
             this.player.body.setSize(targetW, targetH, false);
             this.player.body.setOffset(currentOffX, currentOffY);
+        }
+    }
+
+    onlineModGameCreate() {
+        this.schermataDiCaricamentoOnline = this.add.sprite(
+            400,
+            300,
+            "SchermataDiCaricamentoOffline"
+        )
+            .setAlpha(0)
+            .setScale(0.5)
+            .setOrigin(0.5);
+
+        this.tweens.add({
+            targets: this.schermataDiCaricamentoOnline,
+            duration: 300,
+            alpha: 1,
+            ease: "power 4",
+            onComplete: () => {
+                this.creaArenaOnline();
+                this.creaPlayerEOpponentOnline();
+
+                this.tweens.add({
+                    targets: this.schermataDiCaricamentoOnline,
+                    duration: 300,
+                    alpha: 0,
+                    ease: "power 4",
+                    onComplete: () => {
+                        if (this.schermataDiCaricamentoOnline) {
+                            this.schermataDiCaricamentoOnline.destroy();
+                        }
+                        
+                        if (this.socket) {
+                            this.socket.emit("playerReadyInArena");
+                        }
+                    }
+                });
+            }
+        });
+
+        // Spegnimento della scena per evitare leak
+        this.events.once("shutdown", () => {
+            this.rimuoviSocketListeners();
+        });
+    }
+
+    creaArenaOnline() {
+        const index = (this.arenaIndex !== undefined) ? (this.arenaIndex % this.arrayDiAreneESfondiDelleArene.length) : 0;
+        const arenaSelezionata = this.arrayDiAreneESfondiDelleArene[index];
+        const refSfondo = arenaSelezionata.getRefSfondo();
+        const refArena = arenaSelezionata.getRefArena();
+        const refTiles = arenaSelezionata.getRefTiles();
+
+        this.sfondo = this.add.tileSprite(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.scale.width,
+            this.scale.height,
+            refSfondo
+        ).setDepth(-1);
+
+        const bgFrame = this.textures.getFrame(refSfondo);
+        this.sfondo.setTileScale(
+            this.scale.width / bgFrame.realWidth,
+            this.scale.height / bgFrame.realHeight
+        );
+
+        this.puoiAnimareLoSfondo = true;
+
+        const map = this.make.tilemap({ key: refArena });
+        const tileset = map.addTilesetImage("spritefusion", refTiles);
+
+        this.layerArena = map.createLayer("Layer_0", tileset, 0, 0);
+        this.layerArenaMuri = map.createLayer("Layer_1", tileset, 0, 0);
+        this.layerArenaMuri.setCollisionByExclusion([-1]);
+
+        const { scaleX, scaleY, x, y } = convertArene({
+            mapWidthPx: map.widthInPixels,
+            mapHeightPx: map.heightInPixels,
+            screenWidth: this.scale.width,
+            screenHeight: this.scale.height,
+            mode: "stretch"
+        });
+
+        this.layerArena.setScale(scaleX, scaleY).setPosition(x, y + 200);
+        this.layerArenaMuri.setScale(scaleX, scaleY).setPosition(x, y + 200);
+
+        this.tweens.add({
+            targets: this.layerArena,
+            y: this.layerArena.y + 20,
+            duration: 1000,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.easeInOut"
+        });
+    }
+
+    creaPlayerEOpponentOnline() {
+        const spawnPlayerX = this.isPlayer1 ? 150 : 650;
+        const spawnOpponentX = this.isPlayer1 ? 650 : 150;
+        const spawnY = 150;
+
+        // Player Locale
+        this.player = this.physics.add.sprite(
+            spawnPlayerX,
+            spawnY,
+            this.personaggioPlayer.dati.nome
+        ).setOrigin(0.5, 1);
+        this.player.setCollideWorldBounds(true);
+        this.player.body.setGravityY(500);
+
+        const bodyW = this.player.width * 0.45;
+        const bodyH = this.player.height * 0.85;
+        const offX = (this.player.width - bodyW) / 2;
+        const offY = (this.player.height - bodyH);
+
+        this.playerBodyW = bodyW;
+        this.playerBodyH = bodyH;
+        this.player.body.setSize(bodyW, bodyH, false);
+        this.player.body.setOffset(offX, offY);
+
+        if (!this.isPlayer1) {
+            this.player.setFlipX(true);
+        }
+
+        // Opponent
+        this.NPC = this.physics.add.sprite(
+            spawnOpponentX,
+            spawnY,
+            this.avversarioPersonaggio.dati.nome
+        ).setOrigin(0.5, 1);
+        
+        this.NPC.setCollideWorldBounds(true);
+        this.NPC.body.setGravityY(500);
+        this.NPC.body.setSize(bodyW, bodyH, false);
+        this.NPC.body.setOffset(offX, offY);
+
+        if (this.isPlayer1) {
+            this.NPC.setFlipX(true);
+        }
+
+        // Collisioni
+        this.physics.add.collider(this.player, this.layerArenaMuri);
+        this.physics.add.collider(this.NPC, this.layerArenaMuri);
+        this.physics.add.collider(this.player, this.NPC);
+
+        this.playerCanMove = false;
+        this.playerCanAttack = true;
+        this.delayAttack = 60;
+        this.counter = 0;
+        this.jumpsLeft = 2;
+
+        this.creaBarreHp(
+            this.personaggioPlayer.dati.hp,
+            this.avversarioPersonaggio.dati.hp,
+            "barraDegliHp",
+            this.playerName,
+            this.nomeOpponent
+        );
+
+        // Listeners Socket
+        if (this.socket) {
+            this.socket.on("startArenaCountdown", () => {
+                this.avviaCountdownInArena();
+            });
+
+            this.socket.on("opponentUpdate", (data) => {
+                if (this.NPC) {
+                    this.NPC.setPosition(data.x, data.y);
+                    this.NPC.setVelocity(data.vx, data.vy);
+                    this.NPC.setFlipX(data.flipX);
+                    
+                    this.npcState = data.state;
+                    this.animazioniNPC(this.npcState);
+                }
+            });
+
+            this.socket.on("opponentAttack", (data) => {
+                if (this.NPC) {
+                    this.npcState = data.attackType;
+                    
+                    if (data.attackType === "attacking1" || data.attackType === "attacking2") {
+                        this.npcAttackCounter = 30;
+                    } else if (data.attackType === "superAttacking") {
+                        this.npcAttackCounter = 60;
+                    }
+                    
+                    this.animazioniNPC(this.npcState);
+                }
+            });
+
+            this.socket.on("opponentHit", (data) => {
+                this.riceviDannoPlayer(data.damage);
+            });
+
+            this.socket.on("playerDisconnected", (data) => {
+                this.gestisciDisconnessioneAvversario();
+            });
+        }
+    }
+
+    avviaCountdownInArena() {
+        const stileConto = {
+            fontFamily: 'Orbitron',
+            fontSize: '64px',
+            fontStyle: 'bold',
+            color: '#fcee0a',
+            stroke: '#000000',
+            strokeThickness: 8
+        };
+
+        const testoConto = this.add.text(400, 250, "3", stileConto).setOrigin(0.5).setDepth(20);
+        
+        let countdown = 3;
+        const timer = this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                countdown--;
+                if (countdown === 2) {
+                    testoConto.setText("2");
+                } else if (countdown === 1) {
+                    testoConto.setText("1");
+                } else if (countdown === 0) {
+                    testoConto.setText("FIGHT!");
+                    testoConto.setColor("#00ff00");
+                    testoConto.setFontSize(72);
+                    this.playerCanMove = true;
+                } else {
+                    testoConto.destroy();
+                    timer.destroy();
+                }
+            },
+            repeat: 4
+        });
+    }
+
+    playerMovesOnline() {
+        if (!this.playerCanMove || !this.player) return;
+
+        const playerMoves = {
+            walking: "walking",
+            falling: "falling",
+            jumping: "jumping",
+            standing: "standing"
+        };
+
+        const speed = 200;
+        const isGrounded = this.player.body.blocked.down || this.player.body.touching.down;
+
+        const pad = this.input.gamepad.pad1;
+        const isRightDown = this.inputManager.right.isDown || (pad && (pad.right || pad.buttons[15].pressed || pad.leftStick.x > 0.3));
+        const isLeftDown = this.inputManager.left.isDown || (pad && (pad.left || pad.buttons[14].pressed || pad.leftStick.x < -0.3));
+
+        if (isRightDown) {
+            this.player.setVelocityX(speed);
+            this.player.setFlipX(false);
+
+            if (isGrounded) {
+                this.playerState = playerMoves.walking;
+            }
+        } else if (isLeftDown) {
+            this.player.setVelocityX(-speed);
+            this.player.setFlipX(true);
+
+            if (isGrounded) {
+                this.playerState = playerMoves.walking;
+            }
+        } else {
+            this.player.setVelocityX(0);
+
+            if (isGrounded) {
+                this.playerState = playerMoves.standing;
+            }
+        }
+
+        if (isGrounded) {
+            this.jumpsLeft = 2;
+        }
+
+        if (this.isUpJustPressed() && this.jumpsLeft > 0) {
+            const jumpForce = this.jumpsLeft === 2 ? -400 : -320;
+            this.player.setVelocityY(jumpForce);
+            this.jumpsLeft--;
+        }
+
+        if (!isGrounded) {
+            if (this.player.body.velocity.y < -50) {
+                this.playerState = playerMoves.jumping;
+            } else if (this.player.body.velocity.y > 50) {
+                this.playerState = playerMoves.falling;
+            }
+        }
+
+        this.playerAttacksOnline();
+    }
+
+    playerAttacksOnline() {
+        const playerAttacks = {
+            attack1: "attacking1",
+            attack2: "attacking2",
+            superAttack: "superAttacking"
+        };
+
+        if (this.isAttack1JustPressed()) {
+            if (this.playerCanAttack) {
+                this.player.setTexture(this.personaggioPlayer.dati.nome);
+                this.counter = this.delayAttack;
+                this.playerState = playerAttacks.attack1;
+                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa1);
+                
+                if (this.socket) {
+                    this.socket.emit("playerAttack", { attackType: "attacking1" });
+                }
+            }
+        }
+
+        if (this.isAttack2JustPressed()) {
+            if (this.playerCanAttack) {
+                this.player.setTexture(this.personaggioPlayer.dati.nome);
+                this.counter = this.delayAttack;
+                this.playerState = playerAttacks.attack2;
+                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa2);
+                
+                if (this.socket) {
+                    this.socket.emit("playerAttack", { attackType: "attacking2" });
+                }
+            }
+        }
+
+        if (this.isSuperAttackJustPressed()) {
+            if (this.playerCanAttack) {
+                if (this.superAttackCharge >= this.maxSuperAttackCharge) {
+                    this.superAttackCharge = 0;
+                    this.aggiornaBarraSuper();
+
+                    this.player.setTexture(this.personaggioPlayer.dati.nome);
+                    this.counter = this.delayAttack;
+                    this.playerState = playerAttacks.superAttack;
+                    this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniSuperAttakc, true);
+                    
+                    if (this.socket) {
+                        this.socket.emit("playerAttack", { attackType: "superAttacking" });
+                    }
+                } else {
+                    console.log("Super attacco non ancora carico!");
+                }
+            }
+        }
+
+        if (this.counter > 0) {
+            this.playerCanAttack = false;
+            this.counter--;
+        } else {
+            this.playerCanAttack = true;
+        }
+    }
+
+    creaHitboxAttaccoOnline(danno, isSuper = false) {
+        if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
+
+        const offsetDirezione = this.player.flipX ? -60 : 60;
+        const hitboxX = this.player.x + offsetDirezione;
+        const hitboxY = this.player.y - 30;
+
+        const hitbox = this.physics.add.sprite(hitboxX, hitboxY, null);
+        hitbox.setSize(60, 50);
+        hitbox.setVisible(false);
+        hitbox.body.setAllowGravity(false);
+
+        let colpoAndatoASegno = false;
+
+        this.physics.add.overlap(hitbox, this.NPC, () => {
+            if (!colpoAndatoASegno) {
+                colpoAndatoASegno = true;
+                this.riceviDannoNPC(danno, isSuper);
+                
+                if (this.socket) {
+                    this.socket.emit("playerHit", { damage: danno, isSuper: isSuper });
+                }
+            }
+        });
+
+        this.time.delayedCall(150, () => {
+            hitbox.destroy();
+        });
+    }
+
+    gestisciDisconnessioneAvversario() {
+        this.playerCanMove = false;
+        this.playerCanAttack = false;
+
+        if (this.player) this.player.setVelocity(0, 0);
+        if (this.NPC) this.NPC.setVelocity(0, 0);
+
+        this.rimuoviSocketListeners();
+
+        const stileDisconnessione = {
+            fontFamily: 'Orbitron',
+            fontSize: '36px',
+            fontStyle: 'bold',
+            color: '#ff007f',
+            stroke: '#000000',
+            strokeThickness: 6
+        };
+
+        const testoDisconnessione = this.add.text(
+            400,
+            250,
+            "AVVERSARIO DISCONNESSO\nVITTORIA A TAVOLINO!",
+            stileDisconnessione
+        ).setOrigin(0.5).setDepth(20).setAlign("center");
+
+        this.time.delayedCall(3000, () => {
+            this.cameras.main.fadeOut(500, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.scene.start("HubScene", {
+                    modalita: this.modalita,
+                    nomePlayer: this.playerName,
+                    livelloPlayer: this.livelloPlayer,
+                    personaggiTot: this.personaggiTot
+                });
+            });
+        });
+    }
+
+    rimuoviSocketListeners() {
+        if (this.socket) {
+            this.socket.off("startArenaCountdown");
+            this.socket.off("opponentUpdate");
+            this.socket.off("opponentAttack");
+            this.socket.off("opponentHit");
+            this.socket.off("playerDisconnected");
         }
     }
 }

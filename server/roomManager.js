@@ -92,7 +92,9 @@ function creaNuovaStanza(id) {
         selezioni: {}, // Mappa username -> nome personaggio selezionato
         pronto: {}, // Mappa username -> boolean pronto
         timer: null,
-        tempoRimasto: 60
+        tempoRimasto: 60,
+        arenaReady: {}, // Mappa username -> boolean pronto in ArenaScene
+        matchStarted: false
     };
 }
 
@@ -182,12 +184,17 @@ function avviaMatch(stanza, io) {
     }
 
     console.log(`[RoomManager] Starting online match for room ${stanza.id}`);
+    stanza.matchStarted = true;
+
+    // Genera un indice di arena casuale (es. tra 0 e 9)
+    const arenaIndex = Math.floor(Math.random() * 10);
 
     // Invia i dati di avvio a entrambi i giocatori
     io.to(stanza.id).emit("startMatch", {
         roomId: stanza.id,
         players: stanza.nomiPlayer,
-        selezioni: stanza.selezioni
+        selezioni: stanza.selezioni,
+        arenaIndex: arenaIndex
     });
 }
 
@@ -213,9 +220,10 @@ function disconnettiPlayer(socket) {
     stanza.nomiPlayer = stanza.nomiPlayer.filter((name) => name !== username);
     stanza.playersJoined = stanza.sockets.length;
 
-    // Rimuove selezioni e pronto
+    // Rimuove selezioni, pronto e stato arena
     delete stanza.selezioni[username];
     delete stanza.pronto[username];
+    delete stanza.arenaReady[username];
 
     console.log(`[RoomManager] Player ${username} disconnected from room ${roomId}. Remaining: ${stanza.playersJoined}`);
 
@@ -233,11 +241,72 @@ function disconnettiPlayer(socket) {
     socket.roomId = null;
 }
 
+/**
+ * Gestisce lo stato di pronto in arena del player
+ * @param {import("socket.io").Socket} socket
+ * @param {import("socket.io").Server} io
+ */
+function impostaPlayerProntoInArena(socket, io) {
+    const roomId = socket.roomId;
+    if (!roomId || !stanze[roomId]) return;
+
+    const stanza = stanze[roomId];
+    const username = socket.player ? socket.player.username : "Guest";
+
+    stanza.arenaReady[username] = true;
+    console.log(`[RoomManager] Player ${username} ready in arena for room ${roomId}`);
+
+    const entrambiPronti = stanza.playersJoined === 2 &&
+                          stanza.nomiPlayer.every(name => stanza.arenaReady[name] === true);
+
+    if (entrambiPronti) {
+        console.log(`[RoomManager] Both players ready in arena for room ${roomId}. Emitting startArenaCountdown.`);
+        io.to(roomId).emit("startArenaCountdown");
+    }
+}
+
+/**
+ * Invia l'aggiornamento di posizione/velocità all'avversario
+ * @param {import("socket.io").Socket} socket
+ * @param {any} data
+ */
+function gestisciPlayerUpdate(socket, data) {
+    const roomId = socket.roomId;
+    if (!roomId) return;
+    socket.to(roomId).emit("opponentUpdate", data);
+}
+
+/**
+ * Invia l'attacco all'avversario
+ * @param {import("socket.io").Socket} socket
+ * @param {any} data
+ */
+function gestisciPlayerAttack(socket, data) {
+    const roomId = socket.roomId;
+    if (!roomId) return;
+    socket.to(roomId).emit("opponentAttack", data);
+}
+
+/**
+ * Invia la collisione dell'attacco all'avversario per togliergli vita
+ * @param {import("socket.io").Socket} socket
+ * @param {any} data
+ */
+function gestisciPlayerHit(socket, data) {
+    const roomId = socket.roomId;
+    if (!roomId) return;
+    socket.to(roomId).emit("opponentHit", data);
+}
+
 module.exports = {
     stanze,
     joinaStanza,
     creaNuovaStanza,
     selezionaPersonaggio,
     impostaPronto,
-    disconnettiPlayer
+    disconnettiPlayer,
+    impostaPlayerProntoInArena,
+    gestisciPlayerUpdate,
+    gestisciPlayerAttack,
+    gestisciPlayerHit
 };

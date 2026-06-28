@@ -603,6 +603,8 @@ export default class HubScene extends Phaser.Scene {
                 this.scene.start("ArenaScene", {
                     modalita: "online",
                     roomId: data.roomId,
+                    arenaIndex: data.arenaIndex,
+                    isPlayer1: data.players[0] === this.nomePlayer,
                     mioPersonaggio: { nome: mioPersonaggioNome, dati: mioPgDati },
                     avversarioPersonaggio: { nome: avversarioPersonaggioNome, dati: avversarioPgDati },
                     nomePlayer: this.nomePlayer,

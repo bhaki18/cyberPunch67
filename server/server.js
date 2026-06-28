@@ -5,7 +5,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 
 const { connectDB, LoginPlayer, CreaPlayer, GetPlayerById } = require("../database/database");
-const { joinaStanza, disconnettiPlayer, selezionaPersonaggio, impostaPronto } = require("./roomManager");
+const { joinaStanza, disconnettiPlayer, selezionaPersonaggio, impostaPronto, impostaPlayerProntoInArena, gestisciPlayerUpdate, gestisciPlayerAttack, gestisciPlayerHit } = require("./roomManager");
 
 const PORT = process.env.PORT || 3000;
 
@@ -117,6 +117,22 @@ io.on("connection", (socket) => {
 
   socket.on("onlineSetReady", (data) => {
     impostaPronto(socket, data.ready, io);
+  });
+
+  socket.on("playerReadyInArena", () => {
+    impostaPlayerProntoInArena(socket, io);
+  });
+
+  socket.on("playerUpdate", (data) => {
+    gestisciPlayerUpdate(socket, data);
+  });
+
+  socket.on("playerAttack", (data) => {
+    gestisciPlayerAttack(socket, data);
+  });
+
+  socket.on("playerHit", (data) => {
+    gestisciPlayerHit(socket, data);
   });
 
   socket.on("leaveStanza", () => {
