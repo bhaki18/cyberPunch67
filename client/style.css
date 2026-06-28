@@ -754,8 +754,10 @@ body {
 /* ---- END MATCH PANEL ---- */
 .end-match-panel {
   position: absolute;
-  right: 40px;
-  top: 50px;
+  left: auto !important;
+  right: 40px !important;
+  top: 50px !important;
+  transform: none !important;
   width: 380px;
   height: 500px;
   padding: 26px 24px;

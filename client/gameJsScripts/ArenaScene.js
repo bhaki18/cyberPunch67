@@ -508,14 +508,17 @@ export default class ArenaScene extends Phaser.Scene {
     creaHitboxAttacco(danno, isSuper = false) {
         if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
 
-        // Sposta la hitbox a sinistra o a destra in base a dove guarda il player
-        const offsetDirezione = this.player.flipX ? -60 : 60;
+        // Sposta la hitbox a sinistra o a destra in base a dove guarda il player (più vicina e piccola per attacchi normali)
+        const larghezza = isSuper ? 70 : 36;
+        const altezza = isSuper ? 60 : 30;
+        const offsetDirezione = this.player.flipX ? (isSuper ? -70 : -35) : (isSuper ? 70 : 35);
+        
         const hitboxX = this.player.x + offsetDirezione;
         const hitboxY = this.player.y - 30; // Altezza mezza persona (ancorata ai piedi)
 
         // Crea un oggetto fisico temporaneo e invisibile
         const hitbox = this.physics.add.sprite(hitboxX, hitboxY, null);
-        hitbox.setSize(60, 50);
+        hitbox.setSize(larghezza, altezza);
         hitbox.setVisible(false);
         hitbox.body.setAllowGravity(false);
 
@@ -732,12 +735,16 @@ export default class ArenaScene extends Phaser.Scene {
     creaHitboxAttaccoNPC(danno) {
         if (!this.NPC || !this.player || this.hpPlayer <= 0) return;
 
-        const offsetDirezione = this.NPC.flipX ? -60 : 60;
+        // Sposta la hitbox a sinistra o a destra in base a dove guarda l'NPC
+        const larghezza = 36;
+        const altezza = 30;
+        const offsetDirezione = this.NPC.flipX ? -35 : 35;
+        
         const hitboxX = this.NPC.x + offsetDirezione;
         const hitboxY = this.NPC.y - 30;
 
         const hitbox = this.physics.add.sprite(hitboxX, hitboxY, null);
-        hitbox.setSize(60, 50);
+        hitbox.setSize(larghezza, altezza);
         hitbox.setVisible(false);
         hitbox.body.setAllowGravity(false);
 
@@ -1603,12 +1610,16 @@ export default class ArenaScene extends Phaser.Scene {
     creaHitboxAttaccoOnline(danno, isSuper = false) {
         if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
 
-        const offsetDirezione = this.player.flipX ? -60 : 60;
+        // Sposta la hitbox a sinistra o a destra in base a dove guarda il player (più vicina e piccola per attacchi normali)
+        const larghezza = isSuper ? 70 : 36;
+        const altezza = isSuper ? 60 : 30;
+        const offsetDirezione = this.player.flipX ? (isSuper ? -70 : -35) : (isSuper ? 70 : 35);
+        
         const hitboxX = this.player.x + offsetDirezione;
         const hitboxY = this.player.y - 30;
 
         const hitbox = this.physics.add.sprite(hitboxX, hitboxY, null);
-        hitbox.setSize(60, 50);
+        hitbox.setSize(larghezza, altezza);
         hitbox.setVisible(false);
         hitbox.body.setAllowGravity(false);
 
