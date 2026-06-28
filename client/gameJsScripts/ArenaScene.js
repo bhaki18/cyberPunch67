@@ -1682,7 +1682,12 @@ export default class ArenaScene extends Phaser.Scene {
     mostraSchermataRisultati(vinta, disconnessione = false) {
         const logged = localStorage.getItem("playerLogged") === "true";
         
+        let timeoutAttivato = false;
+        
         const avviaScenaRisultati = (stats) => {
+            if (timeoutAttivato) return;
+            timeoutAttivato = true;
+
             this.cameras.main.fadeOut(500, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', () => {
                 this.rimuoviSocketListeners();
@@ -1698,15 +1703,21 @@ export default class ArenaScene extends Phaser.Scene {
             });
         };
 
-        if (logged && this.socket) {
+        if (logged && this.socket && this.socket.connected) {
             // Registra listener temporaneo per ricevere le statistiche salvate
             this.socket.once("statsAggiornate", (data) => {
                 this.time.delayedCall(1500, () => {
                     avviaScenaRisultati(data);
                 });
             });
+
+            // Timeout di sicurezza: procedi dopo 4.5 secondi anche in assenza di risposta
+            this.time.delayedCall(4500, () => {
+                console.warn("[ArenaScene] Attivato timeout di sicurezza per statsAggiornate.");
+                avviaScenaRisultati(null);
+            });
         } else {
-            // Se ospite, carica la schermata di fine incontro direttamente dopo 2.5 secondi
+            // Se ospite o non connesso, carica la schermata direttamente dopo 2.5 secondi
             this.time.delayedCall(2500, () => {
                 avviaScenaRisultati(null);
             });
