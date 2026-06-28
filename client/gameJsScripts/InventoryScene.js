@@ -40,7 +40,7 @@ export default class InventoryScene extends Phaser.Scene {
         // console.table(this.personaggiNonSbloccati); /*stranamente funziona tutto alla prima botta*/
     }
     create() {
-        this.minY = -766;
+        this.minY = -850;
         this.maxY = 0;
 
         const W = 800;
@@ -51,34 +51,46 @@ export default class InventoryScene extends Phaser.Scene {
             "inventoryBackground"
         ).setOrigin(0.5);
 
-
         // CONTAINER DI COSE DA SCROLLARE
         this.inventoryContainer = this.add.container(0, 0);
-        // this.inventoryContainer.add(this.inventoryBackground);
 
         this.framesInventory = [];
         this.personaggiInventory = [];
-
+        this.selectedFrameObj = null;
 
         for (let i = 0; i < this.personaggiTot.length; i++) {
-            let col = i % 3;
-            let row = Math.floor(i / 3);
+            let col = i % 2;
+            let row = Math.floor(i / 2);
 
             let frame = this.add.sprite(
-                120 + col * 200 + 75,
+                100 + col * 180 + 75,
                 200 + row * 270,
                 "framePgInventory"
             ).setScale(4.5);
 
+            let textureKey = this.personaggiTot[i].nome;
+            if (!this.textures.exists(textureKey)) {
+                console.warn(`[Inventory] Grid texture non trovata per "${textureKey}", uso fallback`);
+                textureKey = "framePgInventory";
+            }
+
             let personaggioOverFrame = this.add.sprite(
                 frame.x,
                 frame.y - 20,
-                this.personaggiTot[i].nome
+                textureKey
             ).setScale(2.5);
 
-            if (this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer) {
+            const bloccato = this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer;
+            if (bloccato) {
                 frame.setTint(0x111111);
                 personaggioOverFrame.setTint(0x111111);
+            }
+
+            // Pre-seleziona il primo personaggio
+            if (i === 0) {
+                frame.setTint(0xbbaa00);
+                personaggioOverFrame.setTint(0xbbaa00);
+                this.selectedFrameObj = { frame, sprite: personaggioOverFrame, pg: this.personaggiTot[0] };
             }
 
             this.personaggiInventory.push(personaggioOverFrame);
@@ -87,7 +99,6 @@ export default class InventoryScene extends Phaser.Scene {
             this.inventoryContainer.add(personaggioOverFrame);
 
             frame.setInteractive({ pixelPerfect: true });
-
 
             frame.on("pointerover", () => {
                 this.tweens.add({
@@ -117,25 +128,124 @@ export default class InventoryScene extends Phaser.Scene {
                 });
             });
 
+            frame.on("pointerup", () => {
+                // Rimuovi evidenziazione dal frame precedente
+                if (this.selectedFrameObj) {
+                    const pgPrecedente = this.selectedFrameObj.pg;
+                    const precedentementeBloccato = pgPrecedente.livelloDiUnlock > this.livelloPlayer;
+                    this.selectedFrameObj.frame.setTint(precedentementeBloccato ? 0x111111 : 0xffffff);
+                    this.selectedFrameObj.sprite.setTint(precedentementeBloccato ? 0x111111 : 0xffffff);
+                }
 
+                // Evidenzia il nuovo frame selezionato
+                frame.setTint(0xbbaa00);
+                personaggioOverFrame.setTint(0xbbaa00);
+                this.selectedFrameObj = { frame, sprite: personaggioOverFrame, pg: this.personaggiTot[i] };
+
+                // Aggiorna pannello statistiche
+                this.mostraStatistichePersonaggio(this.personaggiTot[i]);
+            });
         }
 
+        // --- PANNELLO STATISTICHE SUL LATO (FISSO) ---
+        const panelX = 450;
+        const panelY = 40;
+        const panelW = 330;
+        const panelH = 520;
 
+        const panelBg = this.add.graphics();
+        panelBg.fillStyle(0x050515, 0.85);
+        panelBg.lineStyle(3, 0x00f0ff, 1);
+        panelBg.strokeRoundedRect(panelX, panelY, panelW, panelH, 15);
+        panelBg.fillRoundedRect(panelX, panelY, panelW, panelH, 15);
 
+        this.add.text(panelX + panelW / 2, panelY + 20, "SYSTEM DATA // UNIT", {
+            fontFamily: 'Orbitron',
+            fontSize: '18px',
+            fontStyle: 'bold',
+            color: '#00f0ff',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
 
+        const sep = this.add.graphics();
+        sep.lineStyle(1, 0x00f0ff, 0.4);
+        sep.lineBetween(panelX + 20, panelY + 45, panelX + panelW - 20, panelY + 45);
+
+        // Sprite grande del personaggio selezionato
+        let initialStatsKey = "Dominant Red";
+        if (!this.textures.exists(initialStatsKey)) {
+            console.warn(`[Inventory] Stats texture non trovata per "${initialStatsKey}", uso fallback`);
+            initialStatsKey = "framePgInventory";
+        }
+        this.statsSprite = this.add.sprite(panelX + panelW / 2, panelY + 120, initialStatsKey).setScale(3.5);
+
+        // Testo Nome
+        this.statsNameText = this.add.text(panelX + panelW / 2, panelY + 205, "DOMINANT RED", {
+            fontFamily: 'Orbitron',
+            fontSize: '22px',
+            fontStyle: 'bold',
+            color: '#ff007f',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+
+        // Stato di sblocco
+        this.statsUnlockText = this.add.text(panelX + panelW / 2, panelY + 235, "UNLOCKED", {
+            fontFamily: 'Orbitron',
+            fontSize: '14px',
+            fontStyle: 'bold',
+            color: '#00ff66',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+
+        // Separatore 2
+        sep.lineBetween(panelX + 30, panelY + 255, panelX + panelW - 30, panelY + 255);
+
+        // Dettagli statistiche (HP, Mosse, Danni)
+        const statsStyle = {
+            fontFamily: 'Share Tech Mono',
+            fontSize: '16px',
+            color: '#8efcff'
+        };
+
+        this.statsHpText = this.add.text(panelX + 25, panelY + 270, "HP: 1000", statsStyle);
+        this.statsAttack1Text = this.add.text(panelX + 25, panelY + 295, "MOSSA 1: 25 DMG", statsStyle);
+        this.statsAttack2Text = this.add.text(panelX + 25, panelY + 320, "MOSSA 2: 35 DMG", statsStyle);
+        this.statsSuperText = this.add.text(panelX + 25, panelY + 345, "SUPER: 300 DMG", statsStyle);
+
+        // Descrizione
+        this.add.text(panelX + 25, panelY + 380, "SYSTEM ANALYSIS:", {
+            fontFamily: 'Orbitron',
+            fontSize: '13px',
+            fontStyle: 'bold',
+            color: '#fcee0a',
+            stroke: '#000000',
+            strokeThickness: 2
+        });
+
+        this.statsDescText = this.add.text(panelX + 25, panelY + 400, "", {
+            fontFamily: 'Share Tech Mono',
+            fontSize: '13px',
+            color: '#ffffff',
+            wordWrap: { width: panelW - 50, useAdvancedWrap: true }
+        });
+
+        // Mostra il primo personaggio di default
+        if (this.personaggiTot.length > 0) {
+            this.mostraStatistichePersonaggio(this.personaggiTot[0]);
+        }
 
         this.scrollY = 0;
 
         this.input.on("wheel", (pointer, gameObjects, deltaX, deltaY) => {
-
             this.scrollY -= deltaY * 0.5;
-
             this.scrollY = Phaser.Math.Clamp(
                 this.scrollY,
                 this.minY,
                 this.maxY
             );
-
         });
 
 
@@ -152,5 +262,43 @@ export default class InventoryScene extends Phaser.Scene {
             this.scrollY,
             0.15
         );
+    }
+
+    mostraStatistichePersonaggio(pg) {
+        if (!pg) return;
+
+        // Aggiorna texture sprite grande con fallback
+        if (this.textures.exists(pg.nome)) {
+            this.statsSprite.setTexture(pg.nome);
+        } else {
+            console.warn(`[Inventory] Stats texture non trovata per "${pg.nome}", uso fallback`);
+            this.statsSprite.setTexture("framePgInventory");
+        }
+        
+        // Animazione di rimbalzo premium dello sprite
+        this.statsSprite.setScale(0);
+        this.tweens.add({
+            targets: this.statsSprite,
+            scale: 3.5,
+            duration: 250,
+            ease: "Back.easeOut"
+        });
+
+        // Aggiorna testi
+        this.statsNameText.setText(pg.nome.toUpperCase());
+        this.statsHpText.setText(`HP: ${pg.hp !== undefined ? pg.hp : 1000}`);
+        this.statsAttack1Text.setText(`MOSSA 1 (${pg.nomeMossa1 || "mossa 1"}): ${pg.danniMossa1 !== undefined ? pg.danniMossa1 : 10} DMG`);
+        this.statsAttack2Text.setText(`MOSSA 2 (${pg.nomeMossa2 || "mossa 2"}): ${pg.danniMossa2 !== undefined ? pg.danniMossa2 : 20} DMG`);
+        this.statsSuperText.setText(`SUPER (${pg.nomeSuperAttack || "super attacco"}): ${pg.danniSuperAttakc !== undefined ? pg.danniSuperAttakc : 100} DMG`);
+        
+        // Stato sblocco
+        if (pg.livelloDiUnlock > this.livelloPlayer) {
+            this.statsUnlockText.setText(`LOCKED (REQ. LV. ${pg.livelloDiUnlock})`).setColor("#ff003c");
+        } else {
+            this.statsUnlockText.setText(`UNLOCKED`).setColor("#00ff66");
+        }
+
+        // Descrizione
+        this.statsDescText.setText(pg.descrizione || "Descrizione di sistema non disponibile.");
     }
 }

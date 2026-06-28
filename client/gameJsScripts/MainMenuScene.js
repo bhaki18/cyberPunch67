@@ -164,6 +164,48 @@ export default class MainMenuScene extends Phaser.Scene {
         const yBtn = 200;       // Coordinata Y iniziale per il primo bottone
         const XbtnFinale = 2760; // Coordinata X finale dove si fermeranno i pulsanti
 
+        // Genera dinamicamente la texture spritesheet per il bottone Classifica se non esiste
+        if (!this.textures.exists("leaderboardBtn")) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 124;
+            canvas.height = 123;
+            const ctx = canvas.getContext("2d");
+            
+            // Frame 0: Normal (Neon Cyan border)
+            ctx.fillStyle = "rgba(5, 10, 25, 0.8)";
+            ctx.fillRect(2, 2, 120, 37);
+            ctx.strokeStyle = "#00f0ff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(2, 2, 120, 37);
+            ctx.font = "bold 9px 'Share Tech Mono', monospace";
+            ctx.fillStyle = "#00f0ff";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("CLASSIFICA", 62, 20);
+            
+            // Frame 1: Hover (Neon Pink border)
+            ctx.fillStyle = "rgba(25, 5, 15, 0.9)";
+            ctx.fillRect(2, 43, 120, 37);
+            ctx.strokeStyle = "#ff007f";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(2, 43, 120, 37);
+            ctx.font = "bold 9px 'Share Tech Mono', monospace";
+            ctx.fillStyle = "#ff007f";
+            ctx.fillText("CLASSIFICA", 62, 61);
+            
+            // Frame 2: Clicked (Neon Yellow border)
+            ctx.fillStyle = "rgba(25, 25, 5, 0.9)";
+            ctx.fillRect(2, 84, 120, 37);
+            ctx.strokeStyle = "#ffff00";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(2, 84, 120, 37);
+            ctx.font = "bold 9px 'Share Tech Mono', monospace";
+            ctx.fillStyle = "#ffff00";
+            ctx.fillText("CLASSIFICA", 62, 102);
+            
+            this.textures.addSpriteSheet("leaderboardBtn", canvas, { frameWidth: 124, frameHeight: 41 });
+        }
+
         // --- PULSANTE PLAY ONLINE
         this.bottonePlayOnline = this.add.image(xBtn, yBtn, "playOnlineBtn")
             .setInteractive({ pixelPerfect: true })
@@ -366,12 +408,67 @@ export default class MainMenuScene extends Phaser.Scene {
             this.scene.launch("InfoScene");
         });
 
-        // --- 4. DISPOSIZIONE E ANIMAZIONE CONTINUA DEI BOTTONI
-        this.arrayDiBottoni = [this.bottonePlayOnline, this.bottonePlayOffline, this.bottoneInventory, this.bottoneInfo];
+        // --- PULSANTE CLASSIFICA (LEADERBOARD)
+        this.bottoneLeaderboard = this.add.image(xBtn, yBtn, "leaderboardBtn")
+            .setInteractive({ pixelPerfect: true })
+            .setScale(2)
+            .setDepth(2)
+            .setVisible(false);
 
-        // Distribuisce verticalmente i bottoni a distanze regolari di 90px
+        this.bottoneLeaderboard.on("pointerover", () => {
+            this.tweens.add({
+                targets: this.bottoneLeaderboard,
+                scale: 2.25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
+            this.tweens.add({
+                targets: this.bottoneLeaderboard,
+                x: XbtnFinale + 25,
+                duration: 120,
+                ease: "Sine.easeOut"
+            });
+        });
+
+        this.bottoneLeaderboard.on("pointerout", () => {
+            this.bottoneLeaderboard.setFrame(0);
+            this.tweens.add({
+                targets: this.bottoneLeaderboard,
+                scale: 2,
+                x: XbtnFinale,
+                duration: 180,
+                ease: "Sine.easeOut"
+            });
+        });
+
+        this.bottoneLeaderboard.on("pointerdown", () => {
+            this.bottoneLeaderboard.setFrame(2);
+            this.tweens.add({
+                targets: this.bottoneLeaderboard,
+                angle: -2,
+                duration: 50,
+                yoyo: true
+            });
+        });
+
+        this.bottoneLeaderboard.on("pointerup", () => {
+            this.bottoneLeaderboard.setFrame(1);
+            this.scene.sleep("MainMenuScene");
+            this.scene.launch("LeaderboardScene");
+        });
+
+        // --- 4. DISPOSIZIONE E ANIMAZIONE CONTINUA DEI BOTTONI
+        this.arrayDiBottoni = [
+            this.bottonePlayOnline,
+            this.bottonePlayOffline,
+            this.bottoneInventory,
+            this.bottoneInfo,
+            this.bottoneLeaderboard
+        ];
+
+        // Distribuisce verticalmente i bottoni a distanze regolari di 80px (per far spazio a 5 bottoni)
         for (let i = 0; i < this.arrayDiBottoni.length; i++) {
-            this.arrayDiBottoni[i].y = yBtn + (i * 90);
+            this.arrayDiBottoni[i].y = yBtn + (i * 80);
         }
 
         // Applica un'oscillazione verticale sinusoidale continua a ciascun bottone per un effetto galleggiante
@@ -459,6 +556,12 @@ export default class MainMenuScene extends Phaser.Scene {
         this.faiApparireBarraGiocatore(); // Scivolamento della barra HUD
         this.aggiornaNomeUtentePostLogIn(); // Aggiornamento scritte nome e livello post-login
 
+        // Gestisci visibilità Classifica basata su login status
+        const isLogged = localStorage.getItem("playerLogged") === "true";
+        if (this.bottoneLeaderboard) {
+            this.bottoneLeaderboard.setVisible(isLogged);
+        }
+
         // Muove lo sfondo spaziale per dare l'effetto di movimento
         if (this.spaceBg) {
             this.spaceBg.tilePositionX += 0.25;
@@ -541,17 +644,23 @@ export default class MainMenuScene extends Phaser.Scene {
         if (this.btnsCanFall) {
             const btn = this.arrayDiBottoni[this.bottoneAttuale];
 
-            // Muove il pulsante corrente verso la coordinata finale
-            if (btn.x > 2760) {
-                btn.x -= 20;
-            }
-            if (btn.x < 2760) {
+            // Se il bottone non è visibile, lo posizioniamo istantaneamente e passiamo al successivo senza scuotimento
+            if (!btn.visible) {
                 btn.x = 2760;
-            }
-            if (btn.x === 2760) {
-                // Impatto: piccolo scuotimento di camera e passa al bottone successivo
-                this.cameras.main.shake(200, 0.008);
                 this.bottoneAttuale++;
+            } else {
+                // Muove il pulsante corrente verso la coordinata finale
+                if (btn.x > 2760) {
+                    btn.x -= 20;
+                }
+                if (btn.x < 2760) {
+                    btn.x = 2760;
+                }
+                if (btn.x === 2760) {
+                    // Impatto: piccolo scuotimento di camera e passa al bottone successivo
+                    this.cameras.main.shake(200, 0.008);
+                    this.bottoneAttuale++;
+                }
             }
 
             // Una volta che tutti i bottoni sono posizionati, avvia l'ingresso del pulsante Login

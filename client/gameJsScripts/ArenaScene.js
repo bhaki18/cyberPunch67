@@ -20,6 +20,8 @@ export default class ArenaScene extends Phaser.Scene {
         this.playerName = data.nomePlayer;
         this.livelloPlayer = data.livelloPlayer;
         this.personaggiTot = data.personaggiTot;
+        this.socket = window.socket;
+        this.matchEnded = false;
         
         if (this.modalita === "online") {
             this.roomId = data.roomId;
@@ -27,7 +29,6 @@ export default class ArenaScene extends Phaser.Scene {
             this.arenaIndex = data.arenaIndex;
             this.avversarioPersonaggio = data.avversarioPersonaggio;
             this.nomeOpponent = data.nomeOpponent;
-            this.socket = window.socket;
             this.npcCharacterName = this.avversarioPersonaggio.dati.nome;
         } else {
             this.npcCharacterName = this.personaggioPlayer.dati.nome;
@@ -78,6 +79,17 @@ export default class ArenaScene extends Phaser.Scene {
             this.offlineModGameCreate();
         } else if (this.modalita === "online") {
             this.onlineModGameCreate();
+        }
+
+        if (this.socket) {
+            this.socket.on("statsAggiornate", (data) => {
+                console.log("[Stats] Nuove statistiche ricevute:", data);
+                this.livelloPlayer = data.level;
+                if (window.player) {
+                    window.player.level = data.level;
+                    window.player.exp = data.exp;
+                }
+            });
         }
     }
 
@@ -561,6 +573,17 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     gestisciMorteNPC() {
+        if (this.matchEnded) return;
+        this.matchEnded = true;
+
+        if (this.socket) {
+            if (this.modalita === "online") {
+                this.socket.emit("registraMatchOnline", { vinta: true });
+            } else {
+                this.socket.emit("registraMatchOffline");
+            }
+        }
+
         this.playerCanMove = false;
         this.playerCanAttack = false;
 
@@ -594,7 +617,7 @@ export default class ArenaScene extends Phaser.Scene {
             duration: 500,
             ease: 'Back.easeOut',
             onComplete: () => {
-                this.time.delayedCall(1000, () => {
+                this.time.delayedCall(500, () => {
                     const stileSottoTesto = {
                         fontFamily: 'Orbitron',
                         fontSize: '18px',
@@ -606,7 +629,7 @@ export default class ArenaScene extends Phaser.Scene {
                     const sottoTesto = this.add.text(
                         400,
                         320,
-                        "Ritorno all'Hub...",
+                        "Caricamento risultati...",
                         stileSottoTesto
                     ).setOrigin(0.5).setDepth(10).setAlpha(0);
                     
@@ -617,18 +640,7 @@ export default class ArenaScene extends Phaser.Scene {
                     });
                 });
 
-                // Ritorno all'Hub
-                this.time.delayedCall(3000, () => {
-                    this.cameras.main.fadeOut(500, 0, 0, 0);
-                    this.cameras.main.once('camerafadeoutcomplete', () => {
-                        this.scene.start("HubScene", {
-                            modalita: this.modalita,
-                            nomePlayer: this.playerName,
-                            livelloPlayer: this.livelloPlayer,
-                            personaggiTot: this.personaggiTot
-                        });
-                    });
-                });
+                this.mostraSchermataRisultati(true);
             }
         });
     }
@@ -771,6 +783,17 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     gestisciMortePlayer() {
+        if (this.matchEnded) return;
+        this.matchEnded = true;
+
+        if (this.socket) {
+            if (this.modalita === "online") {
+                this.socket.emit("registraMatchOnline", { vinta: false });
+            } else {
+                this.socket.emit("registraMatchOffline");
+            }
+        }
+
         this.playerCanMove = false;
         this.playerCanAttack = false;
 
@@ -804,7 +827,7 @@ export default class ArenaScene extends Phaser.Scene {
             duration: 500,
             ease: 'Back.easeOut',
             onComplete: () => {
-                this.time.delayedCall(1000, () => {
+                this.time.delayedCall(500, () => {
                     const stileSottoTesto = {
                         fontFamily: 'Orbitron',
                         fontSize: '18px',
@@ -816,7 +839,7 @@ export default class ArenaScene extends Phaser.Scene {
                     const sottoTesto = this.add.text(
                         400,
                         320,
-                        "Ritorno all'Hub...",
+                        "Caricamento risultati...",
                         stileSottoTesto
                     ).setOrigin(0.5).setDepth(10).setAlpha(0);
                     
@@ -827,18 +850,7 @@ export default class ArenaScene extends Phaser.Scene {
                     });
                 });
 
-                // Ritorno all'Hub
-                this.time.delayedCall(3000, () => {
-                    this.cameras.main.fadeOut(500, 0, 0, 0);
-                    this.cameras.main.once('camerafadeoutcomplete', () => {
-                        this.scene.start("HubScene", {
-                            modalita: this.modalita,
-                            nomePlayer: this.playerName,
-                            livelloPlayer: this.livelloPlayer,
-                            personaggiTot: this.personaggiTot
-                        });
-                    });
-                });
+                this.mostraSchermataRisultati(false);
             }
         });
     }
@@ -847,6 +859,9 @@ export default class ArenaScene extends Phaser.Scene {
         if (!this.NPC) return;
 
         if (this.npcAttackCounter > 0) {
+            if (this.modalita === "online") {
+                this.npcAttackCounter--;
+            }
             if (this.playerBodyW && this.playerBodyH) {
                 const targetW = this.playerBodyW / this.NPC.scaleX;
                 const targetH = this.playerBodyH / this.NPC.scaleY;
@@ -1547,6 +1562,13 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     gestisciDisconnessioneAvversario() {
+        if (this.matchEnded) return;
+        this.matchEnded = true;
+
+        if (this.socket) {
+            this.socket.emit("registraMatchOnline", { vinta: true });
+        }
+
         this.playerCanMove = false;
         this.playerCanAttack = false;
 
@@ -1571,17 +1593,7 @@ export default class ArenaScene extends Phaser.Scene {
             stileDisconnessione
         ).setOrigin(0.5).setDepth(20).setAlign("center");
 
-        this.time.delayedCall(3000, () => {
-            this.cameras.main.fadeOut(500, 0, 0, 0);
-            this.cameras.main.once('camerafadeoutcomplete', () => {
-                this.scene.start("HubScene", {
-                    modalita: this.modalita,
-                    nomePlayer: this.playerName,
-                    livelloPlayer: this.livelloPlayer,
-                    personaggiTot: this.personaggiTot
-                });
-            });
-        });
+        this.mostraSchermataRisultati(true, true);
     }
 
     rimuoviSocketListeners() {
@@ -1591,6 +1603,41 @@ export default class ArenaScene extends Phaser.Scene {
             this.socket.off("opponentAttack");
             this.socket.off("opponentHit");
             this.socket.off("playerDisconnected");
+            this.socket.off("statsAggiornate");
+        }
+    }
+
+    mostraSchermataRisultati(vinta, disconnessione = false) {
+        const logged = localStorage.getItem("playerLogged") === "true";
+        
+        const avviaScenaRisultati = (stats) => {
+            this.cameras.main.fadeOut(500, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.rimuoviSocketListeners();
+                this.scene.start("endMatchScene", {
+                    vinta: vinta,
+                    disconnessione: disconnessione,
+                    modalita: this.modalita,
+                    nomePlayer: this.playerName,
+                    personaggioPlayer: this.personaggioPlayer,
+                    personaggiTot: this.personaggiTot,
+                    statsAggiornate: stats
+                });
+            });
+        };
+
+        if (logged && this.socket) {
+            // Registra listener temporaneo per ricevere le statistiche salvate
+            this.socket.once("statsAggiornate", (data) => {
+                this.time.delayedCall(1500, () => {
+                    avviaScenaRisultati(data);
+                });
+            });
+        } else {
+            // Se ospite, carica la schermata di fine incontro direttamente dopo 2.5 secondi
+            this.time.delayedCall(2500, () => {
+                avviaScenaRisultati(null);
+            });
         }
     }
 }

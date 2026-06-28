@@ -19,6 +19,7 @@ import InfoScene from "./InfoScene.js";
 import InventoryScene from "./InventoryScene.js";
 import PauseScene from "./PauseScene.js";
 import UpgradeScene from "./UpgradeScene.js";
+import LeaderboardScene from "./LeaderboardScene.js";
 
 /**
  * Configurazione principale del motore di gioco Phaser.
@@ -74,7 +75,8 @@ const config = {
         InfoScene,
         InventoryScene,
         PauseScene,
-        UpgradeScene
+        UpgradeScene,
+        LeaderboardScene
     ]
 };
 
