@@ -34,10 +34,17 @@ export default class endMatchScene extends Phaser.Scene {
             .setDepth(-2);
 
         // --- 2. SPRITE DEL PERSONAGGIO A SINISTRA (SCALATO IN GRANDE)
-        let textureKey = this.personaggioPlayer.dati.assetStanding;
+        const charName = this.personaggioPlayer.dati.nome;
+        let textureKey = `${charName}standing`;
+        
         if (!this.textures.exists(textureKey)) {
-            // Visualizzazione fallback in caso di texture assente
-            textureKey = "framePgInventory";
+            // Tentativo alternativo col refName
+            const refName = this.personaggioPlayer.dati.nomeImgRef;
+            if (this.textures.exists(`${refName}standing`)) {
+                textureKey = `${refName}standing`;
+            } else {
+                textureKey = "framePgInventory";
+            }
         }
 
         this.heroSprite = this.add.sprite(180, 380, textureKey)
@@ -45,8 +52,7 @@ export default class endMatchScene extends Phaser.Scene {
             .setDepth(2);
 
         // Avvio animazione di stand/respiro se configurata
-        const charName = this.personaggioPlayer.dati.nome;
-        const animKey = `${charName}Standing`;
+        const animKey = `${charName}standing`;
         if (this.anims.exists(animKey) && textureKey !== "framePgInventory") {
             this.heroSprite.play(animKey);
         }

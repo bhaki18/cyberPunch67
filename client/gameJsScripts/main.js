@@ -52,7 +52,7 @@ const config = {
         default: "arcade",
         arcade: {
             gravity: { y: 9.81 * 2 }, // Gravità zero di default (movimento libero multidirezionale)
-            debug: true       // Impostare su true per visualizzare i corpi fisici e le hitbox
+            debug: false       // Impostare su true per visualizzare i corpi fisici e le hitbox
         }
     },
 

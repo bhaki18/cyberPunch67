@@ -408,21 +408,21 @@ export default class ArenaScene extends Phaser.Scene {
             this.player.setVelocityX(speed);
             this.player.setFlipX(false);
 
-            if (isGrounded) {
+            if (isGrounded && !(this.animationCounter > 0)) {
                 this.playerState = playerMoves.walking;
             }
         } else if (isLeftDown) {
             this.player.setVelocityX(-speed);
             this.player.setFlipX(true);
 
-            if (isGrounded) {
+            if (isGrounded && !(this.animationCounter > 0)) {
                 this.playerState = playerMoves.walking;
             }
         } else {
             // Nessun tasto premuto: ferma il player orizzontalmente
             this.player.setVelocityX(0);
 
-            if (isGrounded) {
+            if (isGrounded && !(this.animationCounter > 0)) {
                 this.playerState = playerMoves.standing;
             }
         }
@@ -441,7 +441,7 @@ export default class ArenaScene extends Phaser.Scene {
         }
 
         // --- Airborne State Detection ---
-        if (!isGrounded) {
+        if (!isGrounded && !(this.animationCounter > 0)) {
             if (this.player.body.velocity.y < -50) {
                 this.playerState = playerMoves.jumping;
             } else if (this.player.body.velocity.y > 50) {
@@ -1411,7 +1411,6 @@ export default class ArenaScene extends Phaser.Scene {
                     this.NPC.setFlipX(data.flipX);
                     
                     this.npcState = data.state;
-                    this.animazioniNPC(this.npcState);
 
                     if (data.superCharge !== undefined) {
                         this.enemySuperAttackCharge = data.superCharge;
@@ -1432,8 +1431,6 @@ export default class ArenaScene extends Phaser.Scene {
                         this.enemySuperAttackCharge = 0;
                         this.aggiornaBarraSuperEnemy();
                     }
-                    
-                    this.animazioniNPC(this.npcState);
                 }
             });
 
@@ -1503,20 +1500,20 @@ export default class ArenaScene extends Phaser.Scene {
             this.player.setVelocityX(speed);
             this.player.setFlipX(false);
 
-            if (isGrounded) {
+            if (isGrounded && !(this.animationCounter > 0)) {
                 this.playerState = playerMoves.walking;
             }
         } else if (isLeftDown) {
             this.player.setVelocityX(-speed);
             this.player.setFlipX(true);
 
-            if (isGrounded) {
+            if (isGrounded && !(this.animationCounter > 0)) {
                 this.playerState = playerMoves.walking;
             }
         } else {
             this.player.setVelocityX(0);
 
-            if (isGrounded) {
+            if (isGrounded && !(this.animationCounter > 0)) {
                 this.playerState = playerMoves.standing;
             }
         }
@@ -1531,7 +1528,7 @@ export default class ArenaScene extends Phaser.Scene {
             this.jumpsLeft--;
         }
 
-        if (!isGrounded) {
+        if (!isGrounded && !(this.animationCounter > 0)) {
             if (this.player.body.velocity.y < -50) {
                 this.playerState = playerMoves.jumping;
             } else if (this.player.body.velocity.y > 50) {
