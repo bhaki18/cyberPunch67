@@ -50,8 +50,10 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Inizializzazione variabili Super Attacco
         this.superAttackCharge = 0;
+        this.enemySuperAttackCharge = 0;
         this.maxSuperAttackCharge = 300;
         this.superGlowTween = null;
+        this.superEnemyGlowTween = null;
 
         // Inizializzazione stato precedente pulsanti Gamepad
         this.statoGamepadPrecedente = null;
@@ -119,7 +121,8 @@ export default class ArenaScene extends Phaser.Scene {
                     vx: this.player.body.velocity.x,
                     vy: this.player.body.velocity.y,
                     flipX: this.player.flipX,
-                    state: this.playerState
+                    state: this.playerState,
+                    superCharge: this.superAttackCharge
                 });
             }
         }
@@ -1064,6 +1067,40 @@ export default class ArenaScene extends Phaser.Scene {
             .setOrigin(0, 0.5)
             .setDepth(3);
 
+        // --- Barra Super Colpo Enemy/NPC (Viola Neon con bordo Cyan) ---
+        // Bordo esterno neon cyan
+        this.bordoSuperEnemy = this.add.rectangle(
+            W - 40 + 2,
+            superBarY,
+            lunghezzaHpPx + 4,
+            superBarHeight + 4,
+            0x8efcff
+        )
+            .setOrigin(1, 0.5)
+            .setDepth(1);
+
+        // Sfondo barra super (viola scurissimo)
+        this.sfondoSuperEnemy = this.add.rectangle(
+            W - 40,
+            superBarY,
+            lunghezzaHpPx,
+            superBarHeight,
+            0x15002a
+        )
+            .setOrigin(1, 0.5)
+            .setDepth(2);
+
+        // Barra super effettiva (viola elettrico)
+        this.barraSuperEnemy = this.add.rectangle(
+            W - 40,
+            superBarY,
+            0, // Inizialmente vuota
+            superBarHeight,
+            0xb026ff
+        )
+            .setOrigin(1, 0.5)
+            .setDepth(3);
+
     }
 
     aggiornaBarraSuper() {
@@ -1089,6 +1126,33 @@ export default class ArenaScene extends Phaser.Scene {
                     this.superGlowTween = null;
                 }
                 this.barraSuperPlayer.setAlpha(1);
+            }
+        }
+    }
+
+    aggiornaBarraSuperEnemy() {
+        if (this.barraSuperEnemy && this.maxSuperAttackCharge) {
+            const percentuale = this.enemySuperAttackCharge / this.maxSuperAttackCharge;
+            const lunghezzaHpPx = 450 * 0.7 - 10;
+            this.barraSuperEnemy.setSize(lunghezzaHpPx * percentuale, this.barraSuperEnemy.height);
+
+            // Effetto lampeggio (glow) se carica al 100%
+            if (this.enemySuperAttackCharge >= this.maxSuperAttackCharge) {
+                if (!this.superEnemyGlowTween) {
+                    this.superEnemyGlowTween = this.tweens.add({
+                        targets: this.barraSuperEnemy,
+                        alpha: 0.4,
+                        duration: 200,
+                        yoyo: true,
+                        repeat: -1
+                    });
+                }
+            } else {
+                if (this.superEnemyGlowTween) {
+                    this.superEnemyGlowTween.stop();
+                    this.superEnemyGlowTween = null;
+                }
+                this.barraSuperEnemy.setAlpha(1);
             }
         }
     }
@@ -1348,6 +1412,11 @@ export default class ArenaScene extends Phaser.Scene {
                     
                     this.npcState = data.state;
                     this.animazioniNPC(this.npcState);
+
+                    if (data.superCharge !== undefined) {
+                        this.enemySuperAttackCharge = data.superCharge;
+                        this.aggiornaBarraSuperEnemy();
+                    }
                 }
             });
 
@@ -1359,6 +1428,9 @@ export default class ArenaScene extends Phaser.Scene {
                         this.npcAttackCounter = 30;
                     } else if (data.attackType === "superAttacking") {
                         this.npcAttackCounter = 60;
+                        // Reset carica super per avversario online quando la usa
+                        this.enemySuperAttackCharge = 0;
+                        this.aggiornaBarraSuperEnemy();
                     }
                     
                     this.animazioniNPC(this.npcState);

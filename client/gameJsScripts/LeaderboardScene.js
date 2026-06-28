@@ -12,11 +12,11 @@ export default class LeaderboardScene extends Phaser.Scene {
 
     create() {
         this.socket = window.socket;
-        
+
         // Crea il form contenitore overlay HTML
         this.overlay = document.createElement("div");
         this.overlay.className = "cyber-modal-overlay leaderboard-panel";
-        
+
         // Renders visualizzazione iniziale (Caricamento in corso)
         this.overlay.innerHTML = `
             <button class="cyber-close-btn" id="leaderboard-close-btn" title="Chiudi">&times;</button>
@@ -36,7 +36,7 @@ export default class LeaderboardScene extends Phaser.Scene {
                         <thead>
                             <tr>
                                 <th style="width: 15%;">RANK</th>
-                                <th style="width: 50%;">PILOTA</th>
+                                <th style="width: 50%;">PLAYER</th>
                                 <th style="width: 15%;">LIVELLO</th>
                                 <th style="width: 20%;">PUNTI</th>
                             </tr>
@@ -52,7 +52,7 @@ export default class LeaderboardScene extends Phaser.Scene {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(this.overlay);
 
         // Bottone di chiusura
@@ -64,7 +64,7 @@ export default class LeaderboardScene extends Phaser.Scene {
         // Richiedi i dati aggiornati della classifica al server
         if (this.socket) {
             this.socket.emit("richiediClassifica");
-            
+
             this.socket.once("rispostaClassifica", (data) => {
                 this.popolaClassifica(data);
             });
@@ -86,10 +86,10 @@ export default class LeaderboardScene extends Phaser.Scene {
         const wrapper = this.overlay.querySelector("#leaderboard-content-wrapper");
         const tbody = this.overlay.querySelector("#leaderboard-tbody");
         const footer = this.overlay.querySelector("#leaderboard-footer-stats");
-        
+
         if (loader) loader.style.display = "none";
         if (wrapper) wrapper.style.display = "block";
-        
+
         if (!data || !data.classifica || data.classifica.length === 0) {
             tbody.innerHTML = `
                 <tr>
@@ -136,7 +136,7 @@ export default class LeaderboardScene extends Phaser.Scene {
         // Popola statistiche footer personale
         const posPersonale = data.posizioneMioPlayer > 0 ? `#${data.posizioneMioPlayer}` : "N/D";
         const puntiPersonali = data.puntiMioPlayer !== undefined ? data.puntiMioPlayer : 0;
-        
+
         footer.innerHTML = `
             <span>IL TUO STATO: <span class="hl-val">${posPersonale} POSIZIONE</span></span>
             <span>PUNTEGGIO: <span class="hl-val">${puntiPersonali} pt</span></span>

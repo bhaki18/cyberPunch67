@@ -86,7 +86,38 @@ export default class MainMenuScene extends Phaser.Scene {
 
         // carica i personaggi totali
         this.personaggiTot = caricaPersonaggiTot();
-        this.livelloPlayer = window.player.level !== undefined ? window.player.level : 1;
+        this.livelloPlayer = (window.player && window.player.level !== undefined) ? window.player.level : 1;
+
+        // --- AUTO-LOGIN SE IL TOKEN ESISTE E IL GIOCATORE ERA LOGGATO
+        const token = localStorage.getItem("token");
+        const playerLogged = localStorage.getItem("playerLogged") === "true";
+        if (token && playerLogged && (!window.socket || !window.socket.connected) && typeof io !== "undefined") {
+            try {
+                // @ts-ignore
+                const socket = io("https://cyberpunch67.onrender.com", {
+                    auth: {
+                        token: token
+                    }
+                });
+                window.socket = socket;
+                
+                socket.on("playerLoggato", (player) => {
+                    window.player = player;
+                    this.puoiAggiornareNomeUtente = true; // Permetti l'aggiornamento grafico
+                });
+
+                socket.on("connect", () => {
+                    window.socket.isLogged = true;
+                    console.log("[AutoLogin] Connesso con successo al server backend.");
+                });
+                
+                socket.on("connect_error", (err) => {
+                    console.error("[AutoLogin] Errore connessione socket:", err);
+                });
+            } catch (e) {
+                console.error("[AutoLogin] Errore inizializzazione socket:", e);
+            }
+        }
 
 
         const { width, height } = this.scale;
@@ -167,43 +198,85 @@ export default class MainMenuScene extends Phaser.Scene {
         // Genera dinamicamente la texture spritesheet per il bottone Classifica se non esiste
         if (!this.textures.exists("leaderboardBtn")) {
             const canvas = document.createElement("canvas");
+            canvas.width = 120;
+            canvas.height = 96; // 32px per frame * 3 frames
+            const ctx = canvas.getContext("2d");
+            
+            // Frame 0: Normal (Neon Cyan border)
+            ctx.fillStyle = "rgba(10, 20, 40, 0.8)";
+            ctx.fillRect(2, 2, 116, 28);
+            ctx.strokeStyle = "#00f0ff";
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(2, 2, 116, 28);
+            ctx.font = "bold 10px 'Orbitron', sans-serif";
+            ctx.fillStyle = "#00f0ff";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🏆 RANKING", 60, 16);
+            
+            // Frame 1: Hover (Neon Pink border + glowing background)
+            ctx.fillStyle = "rgba(40, 10, 30, 0.9)";
+            ctx.fillRect(2, 34, 116, 28);
+            ctx.strokeStyle = "#ff007f";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(2, 34, 116, 28);
+            ctx.font = "bold 10px 'Orbitron', sans-serif";
+            ctx.fillStyle = "#ff007f";
+            ctx.fillText("🏆 RANKING", 60, 48);
+            
+            // Frame 2: Clicked (Neon Yellow)
+            ctx.fillStyle = "rgba(40, 40, 10, 0.9)";
+            ctx.fillRect(2, 66, 116, 28);
+            ctx.strokeStyle = "#ffff00";
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(2, 66, 116, 28);
+            ctx.font = "bold 10px 'Orbitron', sans-serif";
+            ctx.fillStyle = "#ffff00";
+            ctx.fillText("🏆 RANKING", 60, 80);
+            
+            this.textures.addSpriteSheet("leaderboardBtn", canvas, { frameWidth: 120, frameHeight: 32 });
+        }
+
+        // Genera dinamicamente la texture spritesheet per il bottone LogOut se non esiste
+        if (!this.textures.exists("logOutBtn")) {
+            const canvas = document.createElement("canvas");
             canvas.width = 124;
             canvas.height = 123;
             const ctx = canvas.getContext("2d");
             
-            // Frame 0: Normal (Neon Cyan border)
-            ctx.fillStyle = "rgba(5, 10, 25, 0.8)";
+            // Frame 0: Normal (Neon Red/Pink border)
+            ctx.fillStyle = "rgba(15, 5, 10, 0.85)";
             ctx.fillRect(2, 2, 120, 37);
-            ctx.strokeStyle = "#00f0ff";
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#ff003c";
+            ctx.lineWidth = 1.5;
             ctx.strokeRect(2, 2, 120, 37);
             ctx.font = "bold 9px 'Share Tech Mono', monospace";
-            ctx.fillStyle = "#00f0ff";
+            ctx.fillStyle = "#ff003c";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText("CLASSIFICA", 62, 20);
+            ctx.fillText("LOG OUT", 62, 20);
             
-            // Frame 1: Hover (Neon Pink border)
-            ctx.fillStyle = "rgba(25, 5, 15, 0.9)";
+            // Frame 1: Hover (Glow Pink border)
+            ctx.fillStyle = "rgba(35, 10, 20, 0.9)";
             ctx.fillRect(2, 43, 120, 37);
             ctx.strokeStyle = "#ff007f";
             ctx.lineWidth = 2;
             ctx.strokeRect(2, 43, 120, 37);
             ctx.font = "bold 9px 'Share Tech Mono', monospace";
             ctx.fillStyle = "#ff007f";
-            ctx.fillText("CLASSIFICA", 62, 61);
+            ctx.fillText("LOG OUT", 62, 61);
             
             // Frame 2: Clicked (Neon Yellow border)
-            ctx.fillStyle = "rgba(25, 25, 5, 0.9)";
+            ctx.fillStyle = "rgba(35, 35, 10, 0.9)";
             ctx.fillRect(2, 84, 120, 37);
             ctx.strokeStyle = "#ffff00";
             ctx.lineWidth = 2;
             ctx.strokeRect(2, 84, 120, 37);
             ctx.font = "bold 9px 'Share Tech Mono', monospace";
             ctx.fillStyle = "#ffff00";
-            ctx.fillText("CLASSIFICA", 62, 102);
+            ctx.fillText("LOG OUT", 62, 102);
             
-            this.textures.addSpriteSheet("leaderboardBtn", canvas, { frameWidth: 124, frameHeight: 41 });
+            this.textures.addSpriteSheet("logOutBtn", canvas, { frameWidth: 124, frameHeight: 41 });
         }
 
         // --- PULSANTE PLAY ONLINE
@@ -409,23 +482,16 @@ export default class MainMenuScene extends Phaser.Scene {
         });
 
         // --- PULSANTE CLASSIFICA (LEADERBOARD)
-        this.bottoneLeaderboard = this.add.image(xBtn, yBtn, "leaderboardBtn")
-            .setInteractive({ pixelPerfect: true })
-            .setScale(2)
-            .setDepth(2)
-            .setVisible(false);
+        this.bottoneLeaderboard = this.add.image(3900, 550, "leaderboardBtn")
+            .setInteractive({ useHandCursor: true })
+            .setDepth(10)
+            .setAlpha(0);
 
         this.bottoneLeaderboard.on("pointerover", () => {
             this.tweens.add({
                 targets: this.bottoneLeaderboard,
-                scale: 2.25,
-                duration: 120,
-                ease: "Sine.easeOut"
-            });
-            this.tweens.add({
-                targets: this.bottoneLeaderboard,
-                x: XbtnFinale + 25,
-                duration: 120,
+                scale: 1.15,
+                duration: 100,
                 ease: "Sine.easeOut"
             });
         });
@@ -434,21 +500,14 @@ export default class MainMenuScene extends Phaser.Scene {
             this.bottoneLeaderboard.setFrame(0);
             this.tweens.add({
                 targets: this.bottoneLeaderboard,
-                scale: 2,
-                x: XbtnFinale,
-                duration: 180,
+                scale: 1,
+                duration: 100,
                 ease: "Sine.easeOut"
             });
         });
 
         this.bottoneLeaderboard.on("pointerdown", () => {
             this.bottoneLeaderboard.setFrame(2);
-            this.tweens.add({
-                targets: this.bottoneLeaderboard,
-                angle: -2,
-                duration: 50,
-                yoyo: true
-            });
         });
 
         this.bottoneLeaderboard.on("pointerup", () => {
@@ -462,13 +521,12 @@ export default class MainMenuScene extends Phaser.Scene {
             this.bottonePlayOnline,
             this.bottonePlayOffline,
             this.bottoneInventory,
-            this.bottoneInfo,
-            this.bottoneLeaderboard
+            this.bottoneInfo
         ];
 
-        // Distribuisce verticalmente i bottoni a distanze regolari di 80px (per far spazio a 5 bottoni)
+        // Distribuisce verticalmente i bottoni a distanze regolari di 90px (ripristinato all'originale)
         for (let i = 0; i < this.arrayDiBottoni.length; i++) {
-            this.arrayDiBottoni[i].y = yBtn + (i * 80);
+            this.arrayDiBottoni[i].y = yBtn + (i * 90);
         }
 
         // Applica un'oscillazione verticale sinusoidale continua a ciascun bottone per un effetto galleggiante
@@ -514,9 +572,41 @@ export default class MainMenuScene extends Phaser.Scene {
 
         this.logInBtn.on("pointerup", () => {
             this.logInBtn.setFrame(1);
-            // Avvio overlay di Login
-            this.scene.sleep();
-            this.scene.launch("LogInScene");
+            
+            const isLogged = localStorage.getItem("playerLogged") === "true";
+            if (isLogged) {
+                // LOGOUT
+                localStorage.removeItem("token");
+                localStorage.setItem("playerLogged", "false");
+                
+                if (window.socket) {
+                    window.socket.disconnect();
+                    window.socket = null;
+                }
+                window.player = {};
+
+                // Reset HUD profile bar
+                if (this.nomeUtenteBarraGiocatore) {
+                    this.nomeUtenteBarraGiocatore.setText("USER\nLV. 1");
+                    this.nomeUtenteBarraGiocatore.setColor("#00f0ff");
+                    this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#00f0ff", 3, false, true);
+                }
+                this.puoiAggiornareNomeUtente = true;
+
+                // Hide Ranking button
+                if (this.bottoneLeaderboard) {
+                    this.bottoneLeaderboard.setVisible(false);
+                    this.bottoneLeaderboard.setAlpha(0);
+                }
+
+                // Change texture to logInBtn
+                this.logInBtn.setTexture("logInBtn");
+                console.log("[Auth] Logout completato con successo.");
+            } else {
+                // LOGIN
+                this.scene.sleep();
+                this.scene.launch("LogInScene");
+            }
         });
 
         // --- 6. ASSET VISIVI DEL PERSONAGGIO (DOMINANT RED) E SUA OMBRA
@@ -552,14 +642,29 @@ export default class MainMenuScene extends Phaser.Scene {
         this.personaggioCheAppare();      // Caduta del personaggio sul terreno
         this.DominantRedCheRespira();     // Animazione idle di respirazione
         this.DominantRedCheAspetta();     // Animazioni acrobatiche casuali dell'attesa
-        this.eliminaBottoneDelLogIn();    // Ritiro del pulsante Login se l'utente è già loggato
         this.faiApparireBarraGiocatore(); // Scivolamento della barra HUD
         this.aggiornaNomeUtentePostLogIn(); // Aggiornamento scritte nome e livello post-login
 
-        // Gestisci visibilità Classifica basata su login status
+        // Gestisci visibilità Classifica basata su login status con fade-in fluido
         const isLogged = localStorage.getItem("playerLogged") === "true";
         if (this.bottoneLeaderboard) {
-            this.bottoneLeaderboard.setVisible(isLogged);
+            if (isLogged && !this.bottoneLeaderboard.visible) {
+                this.bottoneLeaderboard.setVisible(true);
+                this.bottoneLeaderboard.x = 3320;
+                this.tweens.add({
+                    targets: this.bottoneLeaderboard,
+                    alpha: 1,
+                    duration: 300
+                });
+            } else if (!isLogged) {
+                this.bottoneLeaderboard.setVisible(false);
+                this.bottoneLeaderboard.setAlpha(0);
+            }
+        }
+
+        // Aggiorna texture del pulsante di autenticazione in base allo stato di login
+        if (this.logInBtn) {
+            this.logInBtn.setTexture(isLogged ? "logOutBtn" : "logInBtn");
         }
 
         // Muove lo sfondo spaziale per dare l'effetto di movimento
@@ -802,15 +907,7 @@ export default class MainMenuScene extends Phaser.Scene {
         }
     }
 
-    /**
-     * Rimuove il pulsante di Login se l'utente ha completato l'accesso con successo.
-     */
-    eliminaBottoneDelLogIn() {
-        if (localStorage.getItem("playerLogged") === "true" && this.logInBtn) {
-            this.logInBtn.destroy();
-            this.logInBtn = null;
-        }
-    }
+
 
     /**
      * Fa scorrere e apparire la barra HUD del profilo giocatore a fine caricamento.
@@ -855,6 +952,16 @@ export default class MainMenuScene extends Phaser.Scene {
                 alpha: 1,
                 duration: 500
             });
+
+            // Animazione di slide-in per il bottone Classifica (se visibile)
+            if (this.bottoneLeaderboard) {
+                this.tweens.add({
+                    targets: this.bottoneLeaderboard,
+                    x: 3320,
+                    alpha: 1,
+                    duration: 500
+                });
+            }
 
             this.barraGiocatorePuoApparire = false;
             this.puoiAggiornareNomeUtente = true;
