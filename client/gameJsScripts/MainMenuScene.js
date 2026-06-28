@@ -974,18 +974,23 @@ export default class MainMenuScene extends Phaser.Scene {
      * Cambia anche il bagliore in rosa fucsia.
      */
     aggiornaNomeUtentePostLogIn() {
-        if (window.player.username && this.puoiAggiornareNomeUtente) {
-            const displayLevel = window.player.level !== undefined ? window.player.level : 1;
-            this.livelloPlayer = window.player.level !== undefined ? window.player.level : 1;
+        const isLogged = localStorage.getItem("playerLogged") === "true";
+        if (this.nomeUtenteBarraGiocatore) {
+            if (isLogged && window.player && window.player.username && this.puoiAggiornareNomeUtente) {
+                const displayLevel = window.player.level !== undefined ? window.player.level : 1;
+                this.livelloPlayer = window.player.level !== undefined ? window.player.level : 1;
 
-            // Aggiorna il testo su due linee
-            this.nomeUtenteBarraGiocatore.setText(`${window.player.username.toUpperCase()}\nLV. ${displayLevel}`);
+                this.nomeUtenteBarraGiocatore.setText(`${window.player.username.toUpperCase()}\nLV. ${displayLevel}`);
+                this.nomeUtenteBarraGiocatore.setColor("#ff007f");
+                this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#ff007f", 5, false, true);
 
-            // Applica la variazione di colore a stile caldo cyberpunk
-            this.nomeUtenteBarraGiocatore.setColor("#ff007f");
-            this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#ff007f", 5, false, true);
-
-            this.puoiAggiornareNomeUtente = false;
+                this.puoiAggiornareNomeUtente = false;
+            } else if (!isLogged && !this.puoiAggiornareNomeUtente) {
+                this.nomeUtenteBarraGiocatore.setText("USER\nLV. 1");
+                this.nomeUtenteBarraGiocatore.setColor("#00f0ff");
+                this.nomeUtenteBarraGiocatore.setShadow(0, 0, "#00f0ff", 3, false, true);
+                this.puoiAggiornareNomeUtente = true;
+            }
         }
     }
 
