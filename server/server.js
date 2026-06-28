@@ -138,14 +138,15 @@ io.on("connection", (socket) => {
   socket.on("registraMatchOffline", async () => {
     try {
       if (socket.player && socket.player._id) {
+        const rankPosition = await OttieniPosizionePlayer(socket.player._id);
         const updatedPlayer = await AggiungiExp(socket.player._id, 2);
         socket.player = updatedPlayer;
-        const rankPosition = await OttieniPosizionePlayer(socket.player._id);
         socket.emit("statsAggiornate", {
           level: updatedPlayer.level,
           exp: updatedPlayer.exp,
           ptRanked: updatedPlayer.ptRanked || 0,
-          rankPosition: rankPosition
+          rankPosition: rankPosition,
+          rankPositionPrecedente: rankPosition
         });
         console.log(`[Server] Offline match registered for ${updatedPlayer.username}. EXP +2. Current level: ${updatedPlayer.level}, exp: ${updatedPlayer.exp}`);
       }
@@ -158,17 +159,21 @@ io.on("connection", (socket) => {
     try {
       if (socket.player && socket.player._id) {
         const expGained = data.vinta ? 5 : 2;
+        const rankPositionPrima = await OttieniPosizionePlayer(socket.player._id);
+        
         let updatedPlayer = await AggiungiExp(socket.player._id, expGained);
         updatedPlayer = await AggiornaRanked(socket.player._id, data.vinta);
         socket.player = updatedPlayer;
-        const rankPosition = await OttieniPosizionePlayer(socket.player._id);
+        
+        const rankPositionDopo = await OttieniPosizionePlayer(socket.player._id);
         socket.emit("statsAggiornate", {
           level: updatedPlayer.level,
           exp: updatedPlayer.exp,
           ptRanked: updatedPlayer.ptRanked || 0,
-          rankPosition: rankPosition
+          rankPosition: rankPositionDopo,
+          rankPositionPrecedente: rankPositionPrima
         });
-        console.log(`[Server] Online match registered for ${updatedPlayer.username} (Win: ${data.vinta}). EXP +${expGained}, ptRanked delta: ${data.vinta ? "+10" : "-9"}. Current level: ${updatedPlayer.level}, Rank pt: ${updatedPlayer.ptRanked}, Rank pos: ${rankPosition}`);
+        console.log(`[Server] Online match registered for ${updatedPlayer.username} (Win: ${data.vinta}). EXP +${expGained}, ptRanked delta: ${data.vinta ? "+10" : "-9"}. Current level: ${updatedPlayer.level}, Rank pt: ${updatedPlayer.ptRanked}, Rank pos: ${rankPositionDopo}`);
       }
     } catch (err) {
       console.error("Errore registrazione match online:", err);

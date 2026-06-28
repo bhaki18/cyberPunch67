@@ -2,8 +2,9 @@
  * @class endMatchScene
  * @extends Phaser.Scene
  * @description Scena di fine partita (Risultati).
- * Mostra il verdetto finale dell'incontro (VITTORIA / SCONFITTA), le statistiche
- * di combattimento dettagliate e l'esperienza o ricompense accumulate dal giocatore.
+ * Mostra a sinistra il personaggio utilizzato in grande scala con titolo neon
+ * "VITTORIA" o "SCONFITTA" e a destra una barra laterale DOM HTML di statistiche
+ * dettagliate (EXP, Punti Ranked, Posizione in Classifica e Posizione Precedente).
  */
 export default class endMatchScene extends Phaser.Scene {
     constructor() {
@@ -21,55 +22,114 @@ export default class endMatchScene extends Phaser.Scene {
     }
 
     /**
-     * Creazione del tabellone dei punteggi finali.
+     * Creazione degli elementi grafici e DOM di fine incontro.
      */
     create() {
         const isLogged = localStorage.getItem("playerLogged") === "true";
+        const { width, height } = this.scale;
 
+        // --- 1. SFONDO SPAZIALE ANIMATO (TILE SPRITE)
+        this.spaceBg = this.add.tileSprite(0, 0, width, height, "space")
+            .setOrigin(0)
+            .setDepth(-2);
+
+        // --- 2. SPRITE DEL PERSONAGGIO A SINISTRA (SCALATO IN GRANDE)
+        let textureKey = this.personaggioPlayer.dati.assetStanding;
+        if (!this.textures.exists(textureKey)) {
+            // Visualizzazione fallback in caso di texture assente
+            textureKey = "framePgInventory";
+        }
+
+        this.heroSprite = this.add.sprite(180, 380, textureKey)
+            .setScale(4.5)
+            .setDepth(2);
+
+        // Avvio animazione di stand/respiro se configurata
+        const charName = this.personaggioPlayer.dati.nome;
+        const animKey = `${charName}Standing`;
+        if (this.anims.exists(animKey) && textureKey !== "framePgInventory") {
+            this.heroSprite.play(animKey);
+        }
+
+        // Colorazione sprite a tinta spenta se si ha perso
+        if (!this.vinta) {
+            this.heroSprite.setTint(0xff8888);
+        }
+
+        // --- 3. SCRITTA NEON VITTORIA / SCONFITTA FLOATING A SINISTRA
+        const verdictText = this.vinta ? "VITTORIA" : "SCONFITTA";
+        const colorGlow = this.vinta ? "#00ff66" : "#ff003c";
+        
+        const verdictStyle = {
+            fontFamily: "'Orbitron', sans-serif",
+            fontSize: "46px",
+            fontWeight: "900",
+            color: colorGlow,
+            stroke: "#000000",
+            strokeThickness: 8,
+            shadow: {
+                offsetX: 0,
+                offsetY: 0,
+                color: colorGlow,
+                blur: 15,
+                stroke: true,
+                fill: true
+            }
+        };
+
+        this.add.text(180, 110, verdictText, verdictStyle)
+            .setOrigin(0.5)
+            .setDepth(3);
+
+        // --- 4. CARICA OVERLAY DI DESTRA (SIDEBAR STATS IN HTML DOM)
         this.overlay = document.createElement("div");
         this.overlay.className = "cyber-modal-overlay end-match-panel";
 
-        const verdictText = this.vinta ? "VITTORIA" : "SCONFITTA";
-        const verdictClass = this.vinta ? "verdict-victory" : "verdict-defeat";
-        const subtitleText = this.disconnessione ? "AVVERSARIO DISCONNESSO // MATCH TERMINATO" : "MATCH TERMINATO";
+        const subtitleText = this.disconnessione ? "AVVERSARIO SCOLLEGATO" : "MATCH TERMINATO";
 
-        let statsHtml = "";
+        // Estrazione valori di guadagno e standing
+        const expGained = this.modalita === "online" ? (this.vinta ? 5 : 2) : 2;
+        const ptsGainedVal = this.modalita === "online" ? (this.vinta ? 10 : -9) : 0;
+        
+        const ptsGainedSign = ptsGainedVal > 0 ? `+${ptsGainedVal}` : `${ptsGainedVal}`;
+        const ptsGainedClass = ptsGainedVal >= 0 ? "positive" : "negative";
+
+        let rankPosition = "-";
+        let rankPositionPrecedente = "-";
+        
         if (isLogged && this.statsAggiornate) {
-            const expGained = this.modalita === "online" ? (this.vinta ? 5 : 2) : 2;
-            const rankedPtDelta = this.modalita === "online" ? (this.vinta ? "+10 ptRanked" : "-9 ptRanked") : "";
-            const rankedPtClass = this.vinta ? "positive" : "negative";
+            rankPosition = this.statsAggiornate.rankPosition || "-";
+            rankPositionPrecedente = this.statsAggiornate.rankPositionPrecedente || "-";
+        }
 
-            statsHtml = `
-                <div class="end-match-stats">
-                    <div class="stat-item">
+        let statsCardHtml = "";
+        if (isLogged) {
+            statsCardHtml = `
+                <div class="end-match-stats" style="flex-grow: 1; margin: 15px 0; display: flex; flex-direction: column; justify-content: center; gap: 14px;">
+                    <div class="stat-item" style="border-bottom: 1px solid rgba(0, 240, 255, 0.1); padding-bottom: 8px;">
                         <span>MODALITÀ DI GIOCO:</span>
                         <span class="hl-cyan">${this.modalita.toUpperCase()}</span>
                     </div>
-                    <div class="stat-item">
-                        <span>UNITA SELEZIONATA:</span>
-                        <span class="hl-pink">${this.personaggioPlayer.nome}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>ESPERIENZA GUADAGNATA:</span>
+                    <div class="stat-item" style="border-bottom: 1px solid rgba(0, 240, 255, 0.1); padding-bottom: 8px;">
+                        <span>EXP GUADAGNATO:</span>
                         <span class="stat-val-gain positive">+${expGained} EXP</span>
                     </div>
-                    ${this.modalita === "online" ? `
-                    <div class="stat-item">
-                        <span>PUNTI RANKED:</span>
-                        <span class="stat-val-gain ${rankedPtClass}">${rankedPtDelta}</span>
+                    <div class="stat-item" style="border-bottom: 1px solid rgba(0, 240, 255, 0.1); padding-bottom: 8px;">
+                        <span>PUNTI GUADAGNATI:</span>
+                        <span class="stat-val-gain ${ptsGainedClass}">${ptsGainedSign} pt Ranked</span>
                     </div>
-                    <div class="stat-item">
-                        <span>PUNTEGGIO TOTALE:</span>
-                        <span class="hl-cyan">${this.statsAggiornate.ptRanked || 0} pt</span>
+                    <div class="stat-item" style="border-bottom: 1px solid rgba(0, 240, 255, 0.1); padding-bottom: 8px;">
+                        <span>POSIZIONE ATTUALE:</span>
+                        <span class="hl-cyan">#${rankPosition}</span>
                     </div>
-                    <div class="stat-item">
-                        <span>POSIZIONE CLASSIFICA:</span>
-                        <span class="hl-pink">#${this.statsAggiornate.rankPosition || "-"}</span>
+                    <div class="stat-item" style="padding-bottom: 4px;">
+                        <span>POSIZIONE PRECEDENTE:</span>
+                        <span class="hl-pink">#${rankPositionPrecedente}</span>
                     </div>
-                    ` : ""}
                 </div>
 
-                <div class="exp-progress-container">
+                ${this.statsAggiornate ? `
+                <div class="exp-progress-container" style="margin-bottom: 15px;">
                     <div class="exp-level-label">
                         <span>LIVELLO ${this.statsAggiornate.level}</span>
                         <span>${this.statsAggiornate.exp} / 100 EXP</span>
@@ -78,38 +138,43 @@ export default class endMatchScene extends Phaser.Scene {
                         <div class="exp-bar-inner" id="exp-bar-fill" style="width: 0%"></div>
                     </div>
                 </div>
+                ` : `
+                <div style="font-family: 'Share Tech Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.4); text-align: center; margin-bottom: 15px; line-height: 1.3;">
+                    (Connessione instabile. Dati salvati sul server, ma aggiornamento grafico non sincronizzato)
+                </div>
+                `}
             `;
         } else {
-            statsHtml = `
-                <div class="end-match-stats" style="border-color: var(--cyber-pink); text-align: center;">
-                    <div class="hl-pink" style="font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: bold; margin-bottom: 15px;">
+            statsCardHtml = `
+                <div class="end-match-stats" style="flex-grow: 1; border-color: var(--cyber-pink); text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 15px; margin: 20px 0;">
+                    <div class="hl-pink" style="font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: bold;">
                         SYSTEM STATUS: GUEST
                     </div>
-                    <div style="font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #fff; line-height: 1.5;">
+                    <div style="font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #fff; line-height: 1.5;">
                         Non sei loggato nel sistema.<br>
-                        Le statistiche di questo incontro (EXP, Livello, Rank) non verranno salvate nel database.<br>
+                        Le statistiche di questo incontro non verranno salvate nel database.<br>
                         <span class="hl-cyan" style="cursor: pointer; text-decoration: underline;" id="go-login-direct">Esegui il LogIn per salvare i tuoi progressi!</span>
                     </div>
                 </div>
             `;
         }
 
-        const buttonText = this.modalita === "online" ? "RITORNA ALL'HUB // ACCETTA" : "MENU PRINCIPALE // ACCETTA";
+        const buttonText = this.modalita === "online" ? "ACCETTA // ALL'HUB" : "ACCETTA // MENU";
 
         this.overlay.innerHTML = `
-            <h2 class="cyber-title ${verdictClass}">${verdictText}</h2>
-            <div class="cyber-subtitle">// ${subtitleText} //</div>
+            <h2 class="cyber-title" style="font-size: 20px; letter-spacing: 3px; border-bottom: 1px solid rgba(0, 240, 255, 0.2); padding-bottom: 10px; margin-bottom: 10px;">DATI INCONTRO</h2>
+            <div class="cyber-subtitle" style="font-size: 10px;">// ${subtitleText} //</div>
             
-            ${statsHtml}
+            ${statsCardHtml}
 
-            <button class="cyber-submit-btn" id="end-match-accept-btn" style="margin-top: 25px; width: 100%; height: 45px; font-size: 15px; letter-spacing: 2px;">
+            <button class="cyber-submit-btn" id="end-match-accept-btn" style="width: 100%; height: 42px; font-size: 13px; letter-spacing: 2px; margin-top: auto;">
                 ${buttonText}
             </button>
         `;
 
         document.body.appendChild(this.overlay);
 
-        // Animate EXP progress bar if logged in
+        // Animazione della progress bar dell'esperienza
         if (isLogged && this.statsAggiornate) {
             setTimeout(() => {
                 const fill = document.getElementById("exp-bar-fill");
@@ -119,18 +184,26 @@ export default class endMatchScene extends Phaser.Scene {
             }, 100);
         }
 
-        // Close/Accept button listener
+        // Listener del bottone di accettazione/ritorno
         const acceptBtn = this.overlay.querySelector("#end-match-accept-btn");
         acceptBtn.addEventListener("click", () => {
             this.ritorna();
         });
 
-        // If guest clicks log in link
         const loginLink = this.overlay.querySelector("#go-login-direct");
         if (loginLink) {
             loginLink.addEventListener("click", () => {
                 this.ritorna(true);
             });
+        }
+    }
+
+    /**
+     * Ciclo di aggiornamento.
+     */
+    update() {
+        if (this.spaceBg) {
+            this.spaceBg.tilePositionX += 0.25;
         }
     }
 
@@ -157,13 +230,6 @@ export default class endMatchScene extends Phaser.Scene {
         } else {
             this.scene.start("MainMenuScene");
         }
-    }
-
-    /**
-     * Ciclo di aggiornamento.
-     */
-    update() {
-        // Gestione effetti grafici di fine incontro.
     }
 
     shutdown() {
