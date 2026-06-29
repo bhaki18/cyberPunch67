@@ -17,8 +17,6 @@ import ArenaScene from "./ArenaScene.js";
 import endMatchScene from "./endMatchScene.js";
 import InfoScene from "./InfoScene.js";
 import InventoryScene from "./InventoryScene.js";
-import PauseScene from "./PauseScene.js";
-import UpgradeScene from "./UpgradeScene.js";
 import LeaderboardScene from "./LeaderboardScene.js";
 
 /**
@@ -74,8 +72,6 @@ const config = {
         endMatchScene,
         InfoScene,
         InventoryScene,
-        PauseScene,
-        UpgradeScene,
         LeaderboardScene
     ]
 };
