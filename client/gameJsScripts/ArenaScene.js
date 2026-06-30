@@ -253,8 +253,13 @@ export default class ArenaScene extends Phaser.Scene {
             alpha: 1,
             ease: "power 4",
             onStart: () => {
-                this.time.delayedCall(5000, () => {
+                // Ridotto il caricamento offline a 2 secondi per una transizione più dinamica
+                this.time.delayedCall(2000, () => {
                     if (!this.scene.isActive()) return;
+
+                    // Creiamo l'arena e il player a schermo coperto (alpha=1) per evitare pop-in visivi
+                    this.creaArenaRandom();
+                    this.creaPlayerENPC();
 
                     this.tweens.add({
                         targets: this.schermataDiCaricamentoOffline,
@@ -265,10 +270,6 @@ export default class ArenaScene extends Phaser.Scene {
                             if (this.schermataDiCaricamentoOffline) {
                                 this.schermataDiCaricamentoOffline.destroy();
                             }
-                        },
-                        onStart: () => {
-                            this.creaArenaRandom();
-                            this.creaPlayerENPC();
                         }
                     });
                 });
@@ -762,7 +763,7 @@ export default class ArenaScene extends Phaser.Scene {
             this.npcCooldownCounter--;
         }
 
-        const speed = 130; // Velocità NPC leggermente inferiore a quella del player (che è 200) per bilanciamento
+        const speed = 130; // Velocità NPC
         const isGrounded = this.NPC.body.blocked.down || this.NPC.body.touching.down;
 
         if (isGrounded) {
@@ -773,24 +774,54 @@ export default class ArenaScene extends Phaser.Scene {
         const absDiffX = Math.abs(diffX);
         const diffY = this.player.y - this.NPC.y;
 
+        const direzione = diffX > 0 ? 1 : -1;
+
+        // --- INTELLIGENZA CADUTA: Controllo del vuoto davanti ---
+        let haTerrenoDavanti = true;
+        if (isGrounded && this.layerArenaMuri) {
+            // Rileva se c'è terreno a 30px di distanza in orizzontale e 30px in basso
+            const checkX = this.NPC.x + direzione * 30;
+            const checkY = this.NPC.y + 30;
+            const tile = this.layerArenaMuri.getTileAtWorldXY(checkX, checkY);
+            if (!tile) {
+                haTerrenoDavanti = false;
+            }
+        }
+
         // 1. Chasing (Inseguimento) o posizionamento
         if (absDiffX > 65) {
-            // Muoviti verso il player
-            const direzione = diffX > 0 ? 1 : -1;
-            this.NPC.setVelocityX(direzione * speed);
-            this.NPC.setFlipX(direzione < 0);
+            if (!haTerrenoDavanti) {
+                // Se c'è un vuoto davanti, prova a saltarlo
+                if (this.npcJumpsLeft > 0) {
+                    const jumpForce = this.npcJumpsLeft === 2 ? -400 : -320;
+                    this.NPC.setVelocityY(jumpForce);
+                    this.NPC.setVelocityX(direzione * speed * 1.3); // Spinta orizzontale extra per superare il vuoto
+                    this.npcJumpsLeft--;
+                    this.npcState = "jumping";
+                } else {
+                    // Nessun salto rimasto: si ferma sul bordo per non cadere
+                    this.NPC.setVelocityX(0);
+                    if (isGrounded) {
+                        this.npcState = "standing";
+                    }
+                }
+            } else {
+                // Terreno sicuro, cammina verso il player
+                this.NPC.setVelocityX(direzione * speed);
+                this.NPC.setFlipX(direzione < 0);
 
-            if (isGrounded) {
-                this.npcState = "walking";
-            }
+                if (isGrounded) {
+                    this.npcState = "walking";
+                }
 
-            // Salto se c'è un ostacolo (muro) o se il player è sopra ed è il caso di saltare
-            const blockedOnSides = this.NPC.body.blocked.left || this.NPC.body.blocked.right;
-            if ((blockedOnSides || (diffY < -50 && Phaser.Math.Between(0, 100) < 5)) && this.npcJumpsLeft > 0) {
-                const jumpForce = this.npcJumpsLeft === 2 ? -400 : -320;
-                this.NPC.setVelocityY(jumpForce);
-                this.npcJumpsLeft--;
-                this.npcState = "jumping";
+                // Salto se c'è un ostacolo (muro) o se il player è sopra ed è il caso di saltare
+                const blockedOnSides = this.NPC.body.blocked.left || this.NPC.body.blocked.right;
+                if ((blockedOnSides || (diffY < -50 && Phaser.Math.Between(0, 100) < 5)) && this.npcJumpsLeft > 0) {
+                    const jumpForce = this.npcJumpsLeft === 2 ? -400 : -320;
+                    this.NPC.setVelocityY(jumpForce);
+                    this.npcJumpsLeft--;
+                    this.npcState = "jumping";
+                }
             }
         } else {
             // Siamo vicini: ferma il movimento e decidi l'attacco
