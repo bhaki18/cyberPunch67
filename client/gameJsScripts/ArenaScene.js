@@ -1,5 +1,6 @@
 import caricaArene from "../modules/arene.js";
 import convertArene from "../modules/convertArene.js";
+import fx from "../node_modules/phaserpluginfx/phaserFx/phaserFx.js";
 
 
 /**
@@ -22,7 +23,7 @@ export default class ArenaScene extends Phaser.Scene {
         this.personaggiTot = data.personaggiTot;
         this.socket = window.socket;
         this.matchEnded = false;
-        
+
         if (this.modalita === "online") {
             this.roomId = data.roomId;
             this.isPlayer1 = data.isPlayer1;
@@ -380,6 +381,10 @@ export default class ArenaScene extends Phaser.Scene {
         // Doppio salto: 2 salti disponibili, si azzera toccando terra
         this.jumpsLeft = 2;
 
+        // Inizializzazione effetti grafici
+        this.player.fx = new fx(this.player);
+        this.NPC.fx = new fx(this.NPC);
+
         // crea le barre dei giocatori
         this.creaBarreHp(this.personaggioPlayer.dati.hp, this.personaggioPlayer.dati.hp,
             "barraDegliHp", this.playerName, "Bot 1"
@@ -512,7 +517,7 @@ export default class ArenaScene extends Phaser.Scene {
         const larghezza = isSuper ? 70 : 36;
         const altezza = isSuper ? 60 : 30;
         const offsetDirezione = this.player.flipX ? (isSuper ? -70 : -35) : (isSuper ? 70 : 35);
-        
+
         const hitboxX = this.player.x + offsetDirezione;
         const hitboxY = this.player.y - 30; // Altezza mezza persona (ancorata ai piedi)
 
@@ -544,6 +549,14 @@ export default class ArenaScene extends Phaser.Scene {
         this.hpEnemy -= danno;
         if (this.hpEnemy < 0) {
             this.hpEnemy = 0;
+        }
+
+        // Effetto numero di danno fluttuante e vibrazione del personaggio
+        if (this.NPC && this.NPC.fx) {
+            const size = isSuper ? 36 : 28;
+            const color = isSuper ? "ffaa00" : "ff3333";
+            this.NPC.fx.DamageNumberFx(danno, size, color);
+            this.NPC.fx.ShakeFx(200, isSuper ? 10 : 5);
         }
 
         // Incrementa la carica della super (fino al massimo consentito) SOLO se non è un super attacco
@@ -631,14 +644,14 @@ export default class ArenaScene extends Phaser.Scene {
                         stroke: '#000000',
                         strokeThickness: 3
                     };
-                    
+
                     const sottoTesto = this.add.text(
                         400,
                         320,
                         "Caricamento risultati...",
                         stileSottoTesto
                     ).setOrigin(0.5).setDepth(10).setAlpha(0);
-                    
+
                     this.tweens.add({
                         targets: sottoTesto,
                         alpha: 1,
@@ -668,7 +681,7 @@ export default class ArenaScene extends Phaser.Scene {
 
         const speed = 130; // Velocità NPC leggermente inferiore a quella del player (che è 200) per bilanciamento
         const isGrounded = this.NPC.body.blocked.down || this.NPC.body.touching.down;
-        
+
         if (isGrounded) {
             this.npcJumpsLeft = 2;
         }
@@ -739,7 +752,7 @@ export default class ArenaScene extends Phaser.Scene {
         const larghezza = 36;
         const altezza = 30;
         const offsetDirezione = this.NPC.flipX ? -35 : 35;
-        
+
         const hitboxX = this.NPC.x + offsetDirezione;
         const hitboxY = this.NPC.y - 30;
 
@@ -768,6 +781,15 @@ export default class ArenaScene extends Phaser.Scene {
         this.hpPlayer -= danno;
         if (this.hpPlayer < 0) {
             this.hpPlayer = 0;
+        }
+
+        // Effetto numero di danno fluttuante e vibrazione del personaggio
+        if (this.player && this.player.fx) {
+            const isSuper = danno > 25;
+            const size = isSuper ? 36 : 28;
+            const color = isSuper ? "ffaa00" : "ff3333";
+            this.player.fx.DamageNumberFx(danno, size, color);
+            this.player.fx.ShakeFx(200, isSuper ? 10 : 5);
         }
 
         // Ridimensiona barra HP del player
@@ -845,14 +867,14 @@ export default class ArenaScene extends Phaser.Scene {
                         stroke: '#000000',
                         strokeThickness: 3
                     };
-                    
+
                     const sottoTesto = this.add.text(
                         400,
                         320,
                         "Caricamento risultati...",
                         stileSottoTesto
                     ).setOrigin(0.5).setDepth(10).setAlpha(0);
-                    
+
                     this.tweens.add({
                         targets: sottoTesto,
                         alpha: 1,
@@ -1276,7 +1298,7 @@ export default class ArenaScene extends Phaser.Scene {
                         if (this.schermataDiCaricamentoOnline) {
                             this.schermataDiCaricamentoOnline.destroy();
                         }
-                        
+
                         if (this.socket) {
                             this.socket.emit("playerReadyInArena");
                         }
@@ -1376,7 +1398,7 @@ export default class ArenaScene extends Phaser.Scene {
             spawnY,
             this.avversarioPersonaggio.dati.nome
         ).setOrigin(0.5, 1);
-        
+
         this.NPC.setCollideWorldBounds(true);
         this.NPC.body.setGravityY(500);
         this.NPC.body.setSize(bodyW, bodyH, false);
@@ -1397,6 +1419,10 @@ export default class ArenaScene extends Phaser.Scene {
         this.counter = 0;
         this.jumpsLeft = 2;
 
+        // Inizializzazione effetti grafici
+        this.player.fx = new fx(this.player);
+        this.NPC.fx = new fx(this.NPC);
+
         this.creaBarreHp(
             this.personaggioPlayer.dati.hp,
             this.avversarioPersonaggio.dati.hp,
@@ -1416,7 +1442,7 @@ export default class ArenaScene extends Phaser.Scene {
                     this.NPC.setPosition(data.x, data.y);
                     this.NPC.setVelocity(data.vx, data.vy);
                     this.NPC.setFlipX(data.flipX);
-                    
+
                     this.npcState = data.state;
 
                     if (data.superCharge !== undefined) {
@@ -1429,7 +1455,7 @@ export default class ArenaScene extends Phaser.Scene {
             this.socket.on("opponentAttack", (data) => {
                 if (this.NPC) {
                     this.npcState = data.attackType;
-                    
+
                     if (data.attackType === "attacking1" || data.attackType === "attacking2") {
                         this.npcAttackCounter = 30;
                     } else if (data.attackType === "superAttacking") {
@@ -1462,7 +1488,7 @@ export default class ArenaScene extends Phaser.Scene {
         };
 
         const testoConto = this.add.text(400, 250, "3", stileConto).setOrigin(0.5).setDepth(20);
-        
+
         let countdown = 3;
         const timer = this.time.addEvent({
             delay: 1000,
@@ -1559,7 +1585,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack1;
                 this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa1);
-                
+
                 if (this.socket) {
                     this.socket.emit("playerAttack", { attackType: "attacking1" });
                 }
@@ -1572,7 +1598,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack2;
                 this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa2);
-                
+
                 if (this.socket) {
                     this.socket.emit("playerAttack", { attackType: "attacking2" });
                 }
@@ -1589,7 +1615,7 @@ export default class ArenaScene extends Phaser.Scene {
                     this.counter = this.delayAttack;
                     this.playerState = playerAttacks.superAttack;
                     this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniSuperAttakc, true);
-                    
+
                     if (this.socket) {
                         this.socket.emit("playerAttack", { attackType: "superAttacking" });
                     }
@@ -1614,7 +1640,7 @@ export default class ArenaScene extends Phaser.Scene {
         const larghezza = isSuper ? 70 : 36;
         const altezza = isSuper ? 60 : 30;
         const offsetDirezione = this.player.flipX ? (isSuper ? -70 : -35) : (isSuper ? 70 : 35);
-        
+
         const hitboxX = this.player.x + offsetDirezione;
         const hitboxY = this.player.y - 30;
 
@@ -1629,7 +1655,7 @@ export default class ArenaScene extends Phaser.Scene {
             if (!colpoAndatoASegno) {
                 colpoAndatoASegno = true;
                 this.riceviDannoNPC(danno, isSuper);
-                
+
                 if (this.socket) {
                     this.socket.emit("playerHit", { damage: danno, isSuper: isSuper });
                 }
@@ -1689,9 +1715,9 @@ export default class ArenaScene extends Phaser.Scene {
 
     mostraSchermataRisultati(vinta, disconnessione = false) {
         const logged = localStorage.getItem("playerLogged") === "true";
-        
+
         let timeoutAttivato = false;
-        
+
         const avviaScenaRisultati = (stats) => {
             if (timeoutAttivato) return;
             timeoutAttivato = true;

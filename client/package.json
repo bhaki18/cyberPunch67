@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "phaserpluginfx": "^1.5.5",
     "socket.io-client": "^4.8.3"
   }
 }

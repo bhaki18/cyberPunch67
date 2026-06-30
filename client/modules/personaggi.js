@@ -55,7 +55,7 @@ export default function caricaPersonaggiTot() {
     )
 
     const ChromeBlack = new Personaggio({ nome: "Chrome Black", nomeImgRef: "chromeBlack", livelloDiUnlock: 10 });
-    const ScarletNova = new Personaggio({ nome: "Scarket Nova", nomeImgRef: "scarletNova", livelloDiUnlock: 15 });
+    const ScarletNova = new Personaggio({ nome: "Scarlet Nova", nomeImgRef: "scarletNova", livelloDiUnlock: 15 });
     const SYNDelta = new Personaggio({ nome: "SYNDelta", nomeImgRef: "SYNDelta", livelloDiUnlock: 20 });
     const HellbyteUnit = new Personaggio({ nome: "Hellbyte Unit", nomeImgRef: "HellbyteUnit", livelloDiUnlock: 25 });
     const AdminAdp = new Personaggio({ nome: "Admin ADP", nomeImgRef: "AdminAdp", livelloDiUnlock: 10000000000000 });
