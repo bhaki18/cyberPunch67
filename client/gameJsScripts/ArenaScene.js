@@ -92,6 +92,9 @@ export default class ArenaScene extends Phaser.Scene {
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
 
+        // Estendi i limiti del mondo di fisica verso il basso per consentire la caduta fuori dallo schermo
+        this.physics.world.setBounds(0, 0, 800, 1000);
+
         // Inizializzazione sistema effetti globali scena
         this.fxSystem = new fxSystem(this);
 
@@ -158,6 +161,18 @@ export default class ArenaScene extends Phaser.Scene {
         }
 
         this.salvaStatoGamepadPrecedente();
+        this.controllaCadutaMappa();
+    }
+
+    controllaCadutaMappa() {
+        // Se il player cade sotto y = 640 (fuori dallo schermo), muore
+        if (this.player && this.player.y > 640 && this.hpPlayer > 0) {
+            this.riceviDannoPlayer(this.hpPlayer);
+        }
+        // Se il bot/nemico cade sotto y = 640 (fuori dallo schermo), muore
+        if (this.NPC && this.NPC.y > 640 && this.hpEnemy > 0) {
+            this.riceviDannoNPC(this.hpEnemy);
+        }
     }
 
     salvaStatoGamepadPrecedente() {
