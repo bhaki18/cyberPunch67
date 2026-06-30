@@ -211,14 +211,14 @@ export default class InventoryScene extends Phaser.Scene {
         // Dettagli statistiche (HP, Mosse, Danni)
         const statsStyle = {
             fontFamily: 'Share Tech Mono',
-            fontSize: '16px',
+            fontSize: '14px',
             color: '#8efcff'
         };
 
         this.statsHpText = this.add.text(panelX + 25, panelY + 270, "HP: 1000", statsStyle);
-        this.statsAttack1Text = this.add.text(panelX + 25, panelY + 295, "MOSSA 1: 25 DMG", statsStyle);
-        this.statsAttack2Text = this.add.text(panelX + 25, panelY + 320, "MOSSA 2: 35 DMG", statsStyle);
-        this.statsSuperText = this.add.text(panelX + 25, panelY + 345, "SUPER: 300 DMG", statsStyle);
+        this.statsAttack1Text = this.add.text(panelX + 25, panelY + 295, "", statsStyle);
+        this.statsAttack2Text = this.add.text(panelX + 25, panelY + 320, "", statsStyle);
+        this.statsSuperText = this.add.text(panelX + 25, panelY + 345, "", statsStyle);
 
         // Descrizione
         this.add.text(panelX + 25, panelY + 380, "SYSTEM ANALYSIS:", {
@@ -289,12 +289,20 @@ export default class InventoryScene extends Phaser.Scene {
             ease: "Back.easeOut"
         });
 
+        // Funzione helper per abbreviare nomi di mosse troppo lunghi ed evitare overflow nel pannello
+        const formatMossa = (label, nome, danno) => {
+            const maxLen = 15;
+            const nomeMossa = nome || "mossa";
+            const nomeAbbreviato = nomeMossa.length > maxLen ? nomeMossa.substring(0, maxLen - 3) + "..." : nomeMossa;
+            return `${label}: ${nomeAbbreviato} (${danno !== undefined ? danno : 10} DMG)`;
+        };
+
         // Aggiorna testi
         this.statsNameText.setText(pg.nome.toUpperCase());
         this.statsHpText.setText(`HP: ${pg.hp !== undefined ? pg.hp : 1000}`);
-        this.statsAttack1Text.setText(`MOSSA 1 (${pg.nomeMossa1 || "mossa 1"}): ${pg.danniMossa1 !== undefined ? pg.danniMossa1 : 10} DMG`);
-        this.statsAttack2Text.setText(`MOSSA 2 (${pg.nomeMossa2 || "mossa 2"}): ${pg.danniMossa2 !== undefined ? pg.danniMossa2 : 20} DMG`);
-        this.statsSuperText.setText(`SUPER (${pg.nomeSuperAttack || "super attacco"}): ${pg.danniSuperAttakc !== undefined ? pg.danniSuperAttakc : 100} DMG`);
+        this.statsAttack1Text.setText(formatMossa("M1", pg.nomeMossa1, pg.danniMossa1));
+        this.statsAttack2Text.setText(formatMossa("M2", pg.nomeMossa2, pg.danniMossa2));
+        this.statsSuperText.setText(formatMossa("SUPER", pg.nomeSuperAttack, pg.danniSuperAttakc));
         
         // Stato sblocco
         const isAdmin = window.player && window.player.permessi === "admin";
