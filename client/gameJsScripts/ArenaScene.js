@@ -610,10 +610,16 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Knockback (sbalzo di lato) e stordimento se è una super
         if (isSuper && this.NPC && this.player) {
-            const direzioneKnockback = this.player.x < this.NPC.x ? 1 : -1;
-            this.NPC.setVelocityX(direzioneKnockback * 650);
-            this.NPC.setVelocityY(-250); // Spinta verso l'alto
-            this.npcAttackCounter = 20; // Blocca azioni/movimento bot per 20 frame (~330ms)
+            this.npcAttackCounter = 32; // Stordimento esteso per coprire lo shake e lo sbalzo (~530ms)
+            
+            // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (200ms)
+            this.time.delayedCall(200, () => {
+                if (this.NPC && this.hpEnemy > 0 && !this.matchEnded) {
+                    const direzioneKnockback = this.player.x < this.NPC.x ? 1 : -1;
+                    this.NPC.setVelocityX(direzioneKnockback * 650);
+                    this.NPC.setVelocityY(-250); // Spinta verso l'alto
+                }
+            });
         }
 
         // Effetto numero di danno fluttuante e vibrazione del personaggio
@@ -736,6 +742,13 @@ export default class ArenaScene extends Phaser.Scene {
 
     npcBehaviorOffline() {
         if (!this.NPC || !this.player || this.hpEnemy <= 0 || this.hpPlayer <= 0) return;
+
+        // Se il movimento è bloccato (es: durante il countdown), il bot sta fermo
+        if (!this.playerCanMove) {
+            this.NPC.setVelocityX(0);
+            this.npcState = "standing";
+            return;
+        }
 
         // Decrementa i contatori
         if (this.npcAttackCounter > 0) {
@@ -865,15 +878,20 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Knockback (sbalzo di lato) e stordimento se è una super
         if (isSuper && this.player && this.NPC) {
-            const direzioneKnockback = this.NPC.x < this.player.x ? 1 : -1;
-            this.player.setVelocityX(direzioneKnockback * 650);
-            this.player.setVelocityY(-250); // Spinta verso l'alto
-            
-            // Stordimento: disabilita temporaneamente i movimenti del player per 330ms
+            // Stordimento: disabilita temporaneamente i movimenti del player per 530ms (shake + sbalzo)
             this.playerCanMove = false;
-            this.time.delayedCall(330, () => {
+            this.time.delayedCall(530, () => {
                 if (this.hpPlayer > 0 && !this.matchEnded) {
                     this.playerCanMove = true;
+                }
+            });
+
+            // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (200ms)
+            this.time.delayedCall(200, () => {
+                if (this.player && this.hpPlayer > 0 && !this.matchEnded) {
+                    const direzioneKnockback = this.NPC.x < this.player.x ? 1 : -1;
+                    this.player.setVelocityX(direzioneKnockback * 650);
+                    this.player.setVelocityY(-250); // Spinta verso l'alto
                 }
             });
         }
