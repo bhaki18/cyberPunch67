@@ -84,6 +84,11 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Inizializzazione stato precedente pulsanti Gamepad
         this.statoGamepadPrecedente = null;
+
+        // Inizializzazione cooldown mosse player
+        this.cooldownMossa1 = 0;
+        this.cooldownMossa2 = 0;
+        this.cooldownSuper = 0;
     }
 
     /**
@@ -514,62 +519,52 @@ export default class ArenaScene extends Phaser.Scene {
         };
 
 
-        if (this.isAttack1JustPressed()) {
-            if (this.playerCanAttack) {
+        if (this.isAttack1JustPressed() && this.playerCanAttack && this.cooldownMossa1 <= 0 && !(this.animationCounter > 0)) {
+            this.player.setTexture(this.personaggioPlayer.dati.nome);
+            this.cooldownMossa1 = 40; // Cooldown più breve per mossa 1
+            this.playerState = playerAttacks.attack1;
+            this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa1, 1);
+        }
+
+        if (this.isAttack2JustPressed() && this.playerCanAttack && this.cooldownMossa2 <= 0 && !(this.animationCounter > 0)) {
+            this.player.setTexture(this.personaggioPlayer.dati.nome);
+            this.cooldownMossa2 = 80; // Cooldown più lungo per mossa 2
+            this.playerState = playerAttacks.attack2;
+            this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa2, 2);
+        }
+
+        if (this.isSuperAttackJustPressed() && this.playerCanAttack && this.cooldownSuper <= 0 && !(this.animationCounter > 0)) {
+            if (this.superAttackCharge >= this.maxSuperAttackCharge) {
+                this.superAttackCharge = 0;
+                this.aggiornaBarraSuper();
+
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
-                this.counter = this.delayAttack;
-                this.playerState = playerAttacks.attack1;
-                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa1, 1);
+                this.cooldownSuper = 60;
+                this.playerState = playerAttacks.superAttack;
+                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc, "super");
+            } else {
+                console.log("Super attacco non ancora carico!");
             }
         }
 
-        if (this.isAttack2JustPressed()) {
-            if (this.playerCanAttack) {
-                this.player.setTexture(this.personaggioPlayer.dati.nome);
-                this.counter = this.delayAttack;
-                this.playerState = playerAttacks.attack2;
-                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa2, 2);
-            }
-        }
-
-        if (this.isSuperAttackJustPressed()) {
-            if (this.playerCanAttack) {
-                if (this.superAttackCharge >= this.maxSuperAttackCharge) {
-                    this.superAttackCharge = 0;
-                    this.aggiornaBarraSuper();
-
-                    this.player.setTexture(this.personaggioPlayer.dati.nome);
-                    this.counter = this.delayAttack;
-                    this.playerState = playerAttacks.superAttack;
-                    this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc, "super");
-                } else {
-                    console.log("Super attacco non ancora carico!");
-                }
-            }
-        }
-
-        if (this.counter > 0) {
-            this.playerCanAttack = false;
-            this.counter--;
-        } else {
-            this.playerCanAttack = true;
-        }
-
-
+        // Decremento indipendente dei cooldown per ogni mossa
+        if (this.cooldownMossa1 > 0) this.cooldownMossa1--;
+        if (this.cooldownMossa2 > 0) this.cooldownMossa2--;
+        if (this.cooldownSuper > 0) this.cooldownSuper--;
     }
 
     creaHitboxAttacco(danno, tipoMossa = 1) {
         if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
 
-        // Regole dimensione hitbox: mossa 1 (danno minore) è la più piccola, mossa 2 (danno maggiore) è la più grande, la super è una via di mezzo.
-        let larghezza = 36;
-        let altezza = 30;
-        let offsetDirezione = this.player.flipX ? -35 : 35;
+        // Regole dimensione hitbox: mossa 1 (danno minore) ha l'hitbox più grande, mossa 2 (danno maggiore) ha l'hitbox più piccolo.
+        let larghezza = 80;
+        let altezza = 60;
+        let offsetDirezione = this.player.flipX ? -55 : 55;
 
         if (tipoMossa === 2) {
-            larghezza = 80;
-            altezza = 60;
-            offsetDirezione = this.player.flipX ? -55 : 55;
+            larghezza = 36;
+            altezza = 30;
+            offsetDirezione = this.player.flipX ? -35 : 35;
         } else if (tipoMossa === "super") {
             larghezza = 60;
             altezza = 45;
@@ -845,12 +840,12 @@ export default class ArenaScene extends Phaser.Scene {
                 if (randomAttacco === 1) {
                     this.npcState = "attacking1";
                     this.npcAttackCounter = 30; // Si blocca movimento per 30 frame
-                    this.npcCooldownCounter = 60; // Cooldown di 60 frame prima del prossimo attacco
+                    this.npcCooldownCounter = 40; // Cooldown di 40 frame per mossa 1
                     this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa1, 1);
                 } else {
                     this.npcState = "attacking2";
                     this.npcAttackCounter = 30;
-                    this.npcCooldownCounter = 60;
+                    this.npcCooldownCounter = 80; // Cooldown di 80 frame per mossa 2
                     this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa2, 2);
                 }
             }
@@ -869,15 +864,15 @@ export default class ArenaScene extends Phaser.Scene {
     creaHitboxAttaccoNPC(danno, tipoMossa = 1) {
         if (!this.NPC || !this.player || this.hpPlayer <= 0) return;
 
-        // Regole dimensione hitbox: mossa 1 (danno minore) è la più piccola, mossa 2 (danno maggiore) è la più grande, la super è una via di mezzo.
-        let larghezza = 36;
-        let altezza = 30;
-        let offsetDirezione = this.NPC.flipX ? -35 : 35;
+        // Regole dimensione hitbox: mossa 1 (danno minore) ha l'hitbox più grande, mossa 2 (danno maggiore) ha l'hitbox più piccolo.
+        let larghezza = 80;
+        let altezza = 60;
+        let offsetDirezione = this.NPC.flipX ? -55 : 55;
 
         if (tipoMossa === 2) {
-            larghezza = 80;
-            altezza = 60;
-            offsetDirezione = this.NPC.flipX ? -55 : 55;
+            larghezza = 36;
+            altezza = 30;
+            offsetDirezione = this.NPC.flipX ? -35 : 35;
         } else if (tipoMossa === "super") {
             larghezza = 60;
             altezza = 45;
@@ -1742,72 +1737,64 @@ export default class ArenaScene extends Phaser.Scene {
             superAttack: "superAttacking"
         };
 
-        if (this.isAttack1JustPressed()) {
-            if (this.playerCanAttack) {
+        if (this.isAttack1JustPressed() && this.playerCanAttack && this.cooldownMossa1 <= 0 && !(this.animationCounter > 0)) {
+            this.player.setTexture(this.personaggioPlayer.dati.nome);
+            this.cooldownMossa1 = 40; // Cooldown più breve per mossa 1
+            this.playerState = playerAttacks.attack1;
+            this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa1, 1);
+
+            if (this.socket) {
+                this.socket.emit("playerAttack", { attackType: "attacking1" });
+            }
+        }
+
+        if (this.isAttack2JustPressed() && this.playerCanAttack && this.cooldownMossa2 <= 0 && !(this.animationCounter > 0)) {
+            this.player.setTexture(this.personaggioPlayer.dati.nome);
+            this.cooldownMossa2 = 80; // Cooldown più lungo per mossa 2
+            this.playerState = playerAttacks.attack2;
+            this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa2, 2);
+
+            if (this.socket) {
+                this.socket.emit("playerAttack", { attackType: "attacking2" });
+            }
+        }
+
+        if (this.isSuperAttackJustPressed() && this.playerCanAttack && this.cooldownSuper <= 0 && !(this.animationCounter > 0)) {
+            if (this.superAttackCharge >= this.maxSuperAttackCharge) {
+                this.superAttackCharge = 0;
+                this.aggiornaBarraSuper();
+
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
-                this.counter = this.delayAttack;
-                this.playerState = playerAttacks.attack1;
-                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa1, 1);
+                this.cooldownSuper = 60;
+                this.playerState = playerAttacks.superAttack;
+                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniSuperAttakc, "super");
 
                 if (this.socket) {
-                    this.socket.emit("playerAttack", { attackType: "attacking1" });
+                    this.socket.emit("playerAttack", { attackType: "superAttacking" });
                 }
+            } else {
+                console.log("Super attacco non ancora carico!");
             }
         }
 
-        if (this.isAttack2JustPressed()) {
-            if (this.playerCanAttack) {
-                this.player.setTexture(this.personaggioPlayer.dati.nome);
-                this.counter = this.delayAttack;
-                this.playerState = playerAttacks.attack2;
-                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa2, 2);
-
-                if (this.socket) {
-                    this.socket.emit("playerAttack", { attackType: "attacking2" });
-                }
-            }
-        }
-
-        if (this.isSuperAttackJustPressed()) {
-            if (this.playerCanAttack) {
-                if (this.superAttackCharge >= this.maxSuperAttackCharge) {
-                    this.superAttackCharge = 0;
-                    this.aggiornaBarraSuper();
-
-                    this.player.setTexture(this.personaggioPlayer.dati.nome);
-                    this.counter = this.delayAttack;
-                    this.playerState = playerAttacks.superAttack;
-                    this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniSuperAttakc, "super");
-
-                    if (this.socket) {
-                        this.socket.emit("playerAttack", { attackType: "superAttacking" });
-                    }
-                } else {
-                    console.log("Super attacco non ancora carico!");
-                }
-            }
-        }
-
-        if (this.counter > 0) {
-            this.playerCanAttack = false;
-            this.counter--;
-        } else {
-            this.playerCanAttack = true;
-        }
+        // Decremento indipendente dei cooldown per ogni mossa
+        if (this.cooldownMossa1 > 0) this.cooldownMossa1--;
+        if (this.cooldownMossa2 > 0) this.cooldownMossa2--;
+        if (this.cooldownSuper > 0) this.cooldownSuper--;
     }
 
     creaHitboxAttaccoOnline(danno, tipoMossa = 1) {
         if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
 
-        // Regole dimensione hitbox: mossa 1 (danno minore) è la più piccola, mossa 2 (danno maggiore) è la più grande, la super è una via di mezzo.
-        let larghezza = 36;
-        let altezza = 30;
-        let offsetDirezione = this.player.flipX ? -35 : 35;
+        // Regole dimensione hitbox: mossa 1 (danno minore) ha l'hitbox più grande, mossa 2 (danno maggiore) ha l'hitbox più piccolo.
+        let larghezza = 80;
+        let altezza = 60;
+        let offsetDirezione = this.player.flipX ? -55 : 55;
 
         if (tipoMossa === 2) {
-            larghezza = 80;
-            altezza = 60;
-            offsetDirezione = this.player.flipX ? -55 : 55;
+            larghezza = 36;
+            altezza = 30;
+            offsetDirezione = this.player.flipX ? -35 : 35;
         } else if (tipoMossa === "super") {
             larghezza = 60;
             altezza = 45;
