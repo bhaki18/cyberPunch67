@@ -1,6 +1,6 @@
 import caricaArene from "../modules/arene.js";
 import convertArene from "../modules/convertArene.js";
-import fx from "../node_modules/phaserpluginfx/phaserFx/phaserFx.js";
+import fx, { fxSystem } from "../modules/phaserpluginfx/phaserFx.js";
 
 
 /**
@@ -65,6 +65,9 @@ export default class ArenaScene extends Phaser.Scene {
      */
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
+
+        // Inizializzazione sistema effetti globali scena
+        this.fxSystem = new fxSystem(this);
 
         // --- INPUTS ---
         // addKeys registra i tasti sul keyboard plugin di Phaser.
@@ -595,6 +598,11 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.matchEnded) return;
         this.matchEnded = true;
 
+        // Attiva l'effetto slow-motion per 3 secondi alla fine del match
+        if (this.fxSystem) {
+            this.fxSystem.RallyFx(3000, 0.2);
+        }
+
         if (this.socket) {
             if (this.modalita === "online") {
                 this.socket.emit("registraMatchOnline", { vinta: true });
@@ -817,6 +825,11 @@ export default class ArenaScene extends Phaser.Scene {
     gestisciMortePlayer() {
         if (this.matchEnded) return;
         this.matchEnded = true;
+
+        // Attiva l'effetto slow-motion per 3 secondi alla fine del match
+        if (this.fxSystem) {
+            this.fxSystem.RallyFx(3000, 0.2);
+        }
 
         if (this.socket) {
             if (this.modalita === "online") {
