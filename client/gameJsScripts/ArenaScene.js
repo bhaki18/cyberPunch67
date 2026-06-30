@@ -1410,7 +1410,9 @@ export default class ArenaScene extends Phaser.Scene {
             spawnOpponentX,
             spawnY,
             this.avversarioPersonaggio.dati.nome
-        ).setOrigin(0.5, 1);
+        )
+            .setOrigin(0.5, 1)
+            .setTint(0xff8888); // Leggermente rossastro per distinzione online
 
         this.NPC.setCollideWorldBounds(true);
         this.NPC.body.setGravityY(500);
