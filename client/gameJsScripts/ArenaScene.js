@@ -613,12 +613,12 @@ export default class ArenaScene extends Phaser.Scene {
         // Knockback (sbalzo di lato) e stordimento se è una super
         if (isSuper && this.NPC && this.player) {
             this.npcAttackCounter = 32; // Stordimento esteso per coprire lo shake e lo sbalzo (~530ms)
-            
+
             // Determina la direzione in base al lato della texture dell'attaccante al momento del colpo
             const dir = direzioneKnockback !== null ? direzioneKnockback : (this.player.flipX ? -1 : 1);
 
             // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (200ms)
-            this.time.delayedCall(200, () => {
+            this.time.delayedCall(201, () => {
                 if (this.NPC && this.hpEnemy > 0 && !this.matchEnded) {
                     this.NPC.setVelocityX(dir * 900); // Sbalzo in stile Super Smash Bros
                     this.NPC.setVelocityY(-400); // Lancio verso l'alto
@@ -1825,8 +1825,8 @@ export default class ArenaScene extends Phaser.Scene {
                 this.riceviDannoNPC(danno, tipoMossa === "super", direzioneKnockback);
 
                 if (this.socket) {
-                    this.socket.emit("playerHit", { 
-                        damage: danno, 
+                    this.socket.emit("playerHit", {
+                        damage: danno,
                         isSuper: tipoMossa === "super",
                         direzioneKnockback: direzioneKnockback
                     });
