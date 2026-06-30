@@ -591,7 +591,8 @@ export default class ArenaScene extends Phaser.Scene {
         this.physics.add.overlap(hitbox, this.NPC, () => {
             if (!colpoAndatoASegno) {
                 colpoAndatoASegno = true;
-                this.riceviDannoNPC(danno, tipoMossa === "super");
+                const direzioneKnockback = this.player.flipX ? -1 : 1;
+                this.riceviDannoNPC(danno, tipoMossa === "super", direzioneKnockback);
             }
         });
 
@@ -601,7 +602,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    riceviDannoNPC(danno, isSuper = false) {
+    riceviDannoNPC(danno, isSuper = false, direzioneKnockback = null) {
         if (this.hpEnemy <= 0) return;
 
         this.hpEnemy -= danno;
@@ -613,12 +614,14 @@ export default class ArenaScene extends Phaser.Scene {
         if (isSuper && this.NPC && this.player) {
             this.npcAttackCounter = 32; // Stordimento esteso per coprire lo shake e lo sbalzo (~530ms)
             
+            // Determina la direzione in base al lato della texture dell'attaccante al momento del colpo
+            const dir = direzioneKnockback !== null ? direzioneKnockback : (this.player.flipX ? -1 : 1);
+
             // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (200ms)
             this.time.delayedCall(200, () => {
                 if (this.NPC && this.hpEnemy > 0 && !this.matchEnded) {
-                    const direzioneKnockback = this.player.x < this.NPC.x ? 1 : -1;
-                    this.NPC.setVelocityX(direzioneKnockback * 650);
-                    this.NPC.setVelocityY(-250); // Spinta verso l'alto
+                    this.NPC.setVelocityX(dir * 900); // Sbalzo in stile Super Smash Bros
+                    this.NPC.setVelocityY(-400); // Lancio verso l'alto
                 }
             });
         }
@@ -890,7 +893,8 @@ export default class ArenaScene extends Phaser.Scene {
         this.physics.add.overlap(hitbox, this.player, () => {
             if (!colpoAndatoASegno) {
                 colpoAndatoASegno = true;
-                this.riceviDannoPlayer(danno);
+                const direzioneKnockback = this.NPC.flipX ? -1 : 1;
+                this.riceviDannoPlayer(danno, tipoMossa === "super", direzioneKnockback);
             }
         });
 
@@ -899,7 +903,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    riceviDannoPlayer(danno, isSuper = false) {
+    riceviDannoPlayer(danno, isSuper = false, direzioneKnockback = null) {
         if (this.hpPlayer <= 0) return;
 
         this.hpPlayer -= danno;
@@ -917,12 +921,14 @@ export default class ArenaScene extends Phaser.Scene {
                 }
             });
 
+            // Determina la direzione in base al lato della texture dell'attaccante al momento del colpo
+            const dir = direzioneKnockback !== null ? direzioneKnockback : (this.NPC.flipX ? -1 : 1);
+
             // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (200ms)
             this.time.delayedCall(200, () => {
                 if (this.player && this.hpPlayer > 0 && !this.matchEnded) {
-                    const direzioneKnockback = this.NPC.x < this.player.x ? 1 : -1;
-                    this.player.setVelocityX(direzioneKnockback * 650);
-                    this.player.setVelocityY(-250); // Spinta verso l'alto
+                    this.player.setVelocityX(dir * 900); // Sbalzo in stile Super Smash Bros
+                    this.player.setVelocityY(-400); // Lancio verso l'alto
                 }
             });
         }
@@ -1619,7 +1625,7 @@ export default class ArenaScene extends Phaser.Scene {
             });
 
             this.socket.on("opponentHit", (data) => {
-                this.riceviDannoPlayer(data.damage, data.isSuper);
+                this.riceviDannoPlayer(data.damage, data.isSuper, data.direzioneKnockback);
             });
 
             this.socket.on("playerDisconnected", (data) => {
@@ -1815,10 +1821,15 @@ export default class ArenaScene extends Phaser.Scene {
         this.physics.add.overlap(hitbox, this.NPC, () => {
             if (!colpoAndatoASegno) {
                 colpoAndatoASegno = true;
-                this.riceviDannoNPC(danno, tipoMossa === "super");
+                const direzioneKnockback = this.player.flipX ? -1 : 1;
+                this.riceviDannoNPC(danno, tipoMossa === "super", direzioneKnockback);
 
                 if (this.socket) {
-                    this.socket.emit("playerHit", { damage: danno, isSuper: tipoMossa === "super" });
+                    this.socket.emit("playerHit", { 
+                        damage: danno, 
+                        isSuper: tipoMossa === "super",
+                        direzioneKnockback: direzioneKnockback
+                    });
                 }
             }
         });
