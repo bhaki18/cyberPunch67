@@ -47,13 +47,13 @@ export default function caricaPersonaggiTot() {
     const KyraMist = new Personaggio(
         {
             nome: "Kyra Mist",
-            hp: 850,
+            hp: 950,
             nomeMossa1: "Fendente Rapido",
-            danniMossa1: 18,
+            danniMossa1: 30,
             nomeMossa2: "Nebbia Tagliente",
-            danniMossa2: 32,
+            danniMossa2: 42,
             nomeSuperAttack: "Tempesta di Spilli",
-            danniSuperAttakc: 240,
+            danniSuperAttakc: 285,
             livelloDiUnlock: 1,
             descrizione: "Kyra Mist si sposta silenziosa come la nebbia, colpendo i nemici con attacchi fulminei prima che possano reagire.",
             nomeImgRef: "kyraMist"
