@@ -208,20 +208,17 @@ export default class InventoryScene extends Phaser.Scene {
         // Separatore 2
         sep.lineBetween(panelX + 30, panelY + 255, panelX + panelW - 30, panelY + 255);
 
-        // Dettagli statistiche (HP, Mosse, Danni)
-        const statsStyle = {
+        // Dettagli statistiche (HP, Mosse, Danni) in un unico blocco di testo con wordWrap automatico
+        this.statsText = this.add.text(panelX + 25, panelY + 270, "", {
             fontFamily: 'Share Tech Mono',
             fontSize: '14px',
-            color: '#8efcff'
-        };
-
-        this.statsHpText = this.add.text(panelX + 25, panelY + 270, "HP: 1000", statsStyle);
-        this.statsAttack1Text = this.add.text(panelX + 25, panelY + 295, "", statsStyle);
-        this.statsAttack2Text = this.add.text(panelX + 25, panelY + 320, "", statsStyle);
-        this.statsSuperText = this.add.text(panelX + 25, panelY + 345, "", statsStyle);
+            color: '#8efcff',
+            wordWrap: { width: panelW - 50, useAdvancedWrap: true },
+            lineSpacing: 6
+        });
 
         // Descrizione
-        this.add.text(panelX + 25, panelY + 380, "SYSTEM ANALYSIS:", {
+        this.statsDescTitle = this.add.text(panelX + 25, panelY + 380, "SYSTEM ANALYSIS:", {
             fontFamily: 'Orbitron',
             fontSize: '13px',
             fontStyle: 'bold',
@@ -289,21 +286,18 @@ export default class InventoryScene extends Phaser.Scene {
             ease: "Back.easeOut"
         });
 
-        // Funzione helper per abbreviare nomi di mosse troppo lunghi ed evitare overflow nel pannello
-        const formatMossa = (label, nome, danno) => {
-            const maxLen = 15;
-            const nomeMossa = nome || "mossa";
-            const nomeAbbreviato = nomeMossa.length > maxLen ? nomeMossa.substring(0, maxLen - 3) + "..." : nomeMossa;
-            return `${label}: ${nomeAbbreviato} (${danno !== undefined ? danno : 10} DMG)`;
-        };
-
-        // Aggiorna testi
+        // Aggiorna testi principali
         this.statsNameText.setText(pg.nome.toUpperCase());
-        this.statsHpText.setText(`HP: ${pg.hp !== undefined ? pg.hp : 1000}`);
-        this.statsAttack1Text.setText(formatMossa("M1", pg.nomeMossa1, pg.danniMossa1));
-        this.statsAttack2Text.setText(formatMossa("M2", pg.nomeMossa2, pg.danniMossa2));
-        this.statsSuperText.setText(formatMossa("SUPER", pg.nomeSuperAttack, pg.danniSuperAttakc));
-        
+
+        // Componi il blocco delle statistiche in modo leggibile e senza troncamenti
+        const statsLines = [
+            `HP: ${pg.hp !== undefined ? pg.hp : 1000}`,
+            `M1: ${pg.nomeMossa1 || "mossa 1"} (${pg.danniMossa1 !== undefined ? pg.danniMossa1 : 10} DMG)`,
+            `M2: ${pg.nomeMossa2 || "mossa 2"} (${pg.danniMossa2 !== undefined ? pg.danniMossa2 : 20} DMG)`,
+            `SUPER: ${pg.nomeSuperAttack || "super attacco"} (${pg.danniSuperAttakc !== undefined ? pg.danniSuperAttakc : 100} DMG)`
+        ];
+        this.statsText.setText(statsLines.join("\n"));
+
         // Stato sblocco
         const isAdmin = window.player && window.player.permessi === "admin";
         const bloccato = pg.nome === "Admin ADP" ? !isAdmin : (pg.livelloDiUnlock > this.livelloPlayer);
@@ -313,6 +307,10 @@ export default class InventoryScene extends Phaser.Scene {
         } else {
             this.statsUnlockText.setText(`UNLOCKED`).setColor("#00ff66");
         }
+
+        // Riposiziona dinamicamente la descrizione sotto il blocco delle statistiche per evitare sovrapposizioni
+        this.statsDescTitle.y = this.statsText.y + this.statsText.height + 15;
+        this.statsDescText.y = this.statsDescTitle.y + 20;
 
         // Descrizione
         this.statsDescText.setText(pg.descrizione || "Descrizione di sistema non disponibile.");
