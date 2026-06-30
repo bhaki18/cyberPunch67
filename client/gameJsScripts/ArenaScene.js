@@ -416,11 +416,14 @@ export default class ArenaScene extends Phaser.Scene {
             this.NPC
         );
 
-        // Abilita il movimento del player dopo la creazione
-        this.playerCanMove = true;
+        // Disabilita inizialmente il movimento per attendere il countdown
+        this.playerCanMove = false;
         this.playerCanAttack = true;
         this.delayAttack = 60; // 60 frames = circa 1 secondi a 60fps
         this.counter = 0;
+
+        // Avvia il countdown di inizio incontro (lo stesso dell'online)
+        this.avviaCountdownInArena();
 
         // Doppio salto: 2 salti disponibili, si azzera toccando terra
         this.jumpsLeft = 2;

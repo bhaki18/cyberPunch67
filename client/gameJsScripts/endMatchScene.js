@@ -25,6 +25,8 @@ export default class endMatchScene extends Phaser.Scene {
      * Creazione degli elementi grafici e DOM di fine incontro.
      */
     create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+
         const isLogged = localStorage.getItem("playerLogged") === "true";
         const { width, height } = this.scale;
 
@@ -253,28 +255,31 @@ export default class endMatchScene extends Phaser.Scene {
     }
 
     ritorna(vaiAlLogin = false) {
-        this.shutdown();
-        this.scene.stop("endMatchScene");
-        
-        if (vaiAlLogin) {
-            this.scene.start("MainMenuScene");
-            this.time.delayedCall(200, () => {
-                const menu = this.scene.get("MainMenuScene");
-                if (menu) {
-                    menu.scene.sleep();
-                    menu.scene.launch("LogInScene");
-                }
-            });
-        } else if (this.modalita === "online") {
-            this.scene.start("HubScene", {
-                modalita: this.modalita,
-                nomePlayer: this.nomePlayer,
-                livelloPlayer: this.statsAggiornate ? this.statsAggiornate.level : 1,
-                personaggiTot: this.personaggiTot
-            });
-        } else {
-            this.scene.start("MainMenuScene");
-        }
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+            this.shutdown();
+            this.scene.stop("endMatchScene");
+            
+            if (vaiAlLogin) {
+                this.scene.start("MainMenuScene");
+                this.time.delayedCall(200, () => {
+                    const menu = this.scene.get("MainMenuScene");
+                    if (menu) {
+                        menu.scene.sleep();
+                        menu.scene.launch("LogInScene");
+                    }
+                });
+            } else if (this.modalita === "online") {
+                this.scene.start("HubScene", {
+                    modalita: this.modalita,
+                    nomePlayer: this.nomePlayer,
+                    livelloPlayer: this.statsAggiornate ? this.statsAggiornate.level : 1,
+                    personaggiTot: this.personaggiTot
+                });
+            } else {
+                this.scene.start("MainMenuScene");
+            }
+        });
     }
 
     shutdown() {

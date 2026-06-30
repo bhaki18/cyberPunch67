@@ -26,6 +26,8 @@ export default class HubScene extends Phaser.Scene {
      * Inizializzazione della grafica e delle interazioni dell'Hub.
      */
     create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+
         // TODO: Aggiungere menu interattivo dell'hub, chat room o pulsanti di matchmaking.
 
         // SFONDO DELL'HUB
@@ -122,8 +124,11 @@ export default class HubScene extends Phaser.Scene {
             });
 
             btnTorna.on("pointerup", () => {
-                this.scene.start("MainMenuScene", {
-                    bgScrollX: this.sfondoHub.tilePositionX
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once("camerafadeoutcomplete", () => {
+                    this.scene.start("MainMenuScene", {
+                        bgScrollX: this.sfondoHub.tilePositionX
+                    });
                 });
             });
 
@@ -280,12 +285,16 @@ export default class HubScene extends Phaser.Scene {
                     onComplete: () => {
                         this.tastoProntoOffline.y -= 10;
                         this.tastoProntoOffline.clearTint();
-                        this.scene.start("ArenaScene", {
-                            modalita: "offline",
-                            personaggioSelezionato: this.personaggioSelezionato,
-                            nomePlayer: this.nomePlayer,
-                            livelloPlayer: this.livelloPlayer,
-                            personaggiTot: this.personaggiTot
+                        
+                        this.cameras.main.fadeOut(500, 0, 0, 0);
+                        this.cameras.main.once("camerafadeoutcomplete", () => {
+                            this.scene.start("ArenaScene", {
+                                modalita: "offline",
+                                personaggioSelezionato: this.personaggioSelezionato,
+                                nomePlayer: this.nomePlayer,
+                                livelloPlayer: this.livelloPlayer,
+                                personaggiTot: this.personaggiTot
+                            });
                         });
                     }
                 });
@@ -542,8 +551,12 @@ export default class HubScene extends Phaser.Scene {
             btnTorna.on("pointerup", () => {
                 this.rimuoviSocketListeners();
                 this.socket.emit("leaveStanza"); // Notifica il server per uscire dalla stanza
-                this.scene.start("MainMenuScene", {
-                    bgScrollX: this.sfondoHub.tilePositionX
+                
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once("camerafadeoutcomplete", () => {
+                    this.scene.start("MainMenuScene", {
+                        bgScrollX: this.sfondoHub.tilePositionX
+                    });
                 });
             });
 
@@ -604,17 +617,20 @@ export default class HubScene extends Phaser.Scene {
                 const mioPgDati = this.personaggiTot.find(p => p.nome === mioPersonaggioNome);
                 const avversarioPgDati = this.personaggiTot.find(p => p.nome === avversarioPersonaggioNome);
 
-                this.scene.start("ArenaScene", {
-                    modalita: "online",
-                    roomId: data.roomId,
-                    arenaIndex: data.arenaIndex,
-                    isPlayer1: data.players[0] === this.nomePlayer,
-                    mioPersonaggio: { nome: mioPersonaggioNome, dati: mioPgDati },
-                    avversarioPersonaggio: { nome: avversarioPersonaggioNome, dati: avversarioPgDati },
-                    nomePlayer: this.nomePlayer,
-                    nomeOpponent: avversarioNome,
-                    livelloPlayer: this.livelloPlayer,
-                    personaggiTot: this.personaggiTot
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once("camerafadeoutcomplete", () => {
+                    this.scene.start("ArenaScene", {
+                        modalita: "online",
+                        roomId: data.roomId,
+                        arenaIndex: data.arenaIndex,
+                        isPlayer1: data.players[0] === this.nomePlayer,
+                        mioPersonaggio: { nome: mioPersonaggioNome, dati: mioPgDati },
+                        avversarioPersonaggio: { nome: avversarioPersonaggioNome, dati: avversarioPgDati },
+                        nomePlayer: this.nomePlayer,
+                        nomeOpponent: avversarioNome,
+                        livelloPlayer: this.livelloPlayer,
+                        personaggiTot: this.personaggiTot
+                    });
                 });
             });
 
