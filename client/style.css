@@ -754,13 +754,6 @@ body {
 /* ---- END MATCH PANEL ---- */
 .end-match-panel {
   position: absolute;
-  left: auto !important;
-  right: 40px !important;
-  top: 50px !important;
-  transform: none !important;
-  width: 380px;
-  height: 500px;
-  padding: 26px 24px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -778,10 +771,10 @@ body {
 }
 
 .end-match-stats {
-  margin: 20px 0;
+  margin: calc(15px * var(--scale-factor, 1)) 0;
   background: rgba(0, 240, 255, 0.02);
   border: 1px solid rgba(0, 240, 255, 0.1);
-  padding: 15px;
+  padding: calc(12px * var(--scale-factor, 1));
   border-radius: 4px;
   text-align: left;
 }
@@ -790,9 +783,9 @@ body {
   display: flex;
   justify-content: space-between;
   font-family: 'Share Tech Mono', monospace;
-  font-size: 15px;
+  font-size: calc(14px * var(--scale-factor, 1));
   color: #fff;
-  margin-bottom: 8px;
+  margin-bottom: calc(6px * var(--scale-factor, 1));
 }
 
 .stat-item:last-child {
@@ -817,16 +810,16 @@ body {
 
 .exp-level-label {
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-size: calc(12px * var(--scale-factor, 1));
   color: var(--cyber-cyan);
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: calc(4px * var(--scale-factor, 1));
 }
 
 .exp-bar-outer {
   width: 100%;
-  height: 12px;
+  height: calc(10px * var(--scale-factor, 1));
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(0, 240, 255, 0.2);
   border-radius: 6px;

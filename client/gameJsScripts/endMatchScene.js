@@ -180,6 +180,45 @@ export default class endMatchScene extends Phaser.Scene {
 
         document.body.appendChild(this.overlay);
 
+        // Funzione per posizionare e scalare l'overlay HTML esattamente a destra del canvas di Phaser
+        const posizionaOverlay = () => {
+            if (!this.overlay || !this.game || !this.game.canvas) return;
+
+            const rect = this.game.canvas.getBoundingClientRect();
+            const scaleX = rect.width / 800;
+            const scaleY = rect.height / 600;
+
+            this.overlay.style.position = "absolute";
+            this.overlay.style.setProperty("left", `${rect.left + 390 * scaleX}px`, "important");
+            this.overlay.style.setProperty("right", "auto", "important");
+            this.overlay.style.setProperty("top", `${rect.top + 50 * scaleY}px`, "important");
+            this.overlay.style.setProperty("transform", "none", "important");
+            this.overlay.style.setProperty("width", `${380 * scaleX}px`, "important");
+            this.overlay.style.setProperty("height", `${500 * scaleY}px`, "important");
+            
+            // Imposta il fattore di scala per le proprietà CSS interne (padding, margin, font-size)
+            this.overlay.style.setProperty("--scale-factor", scaleY);
+            
+            // Imposta la dimensione font base e padding in base allo scaling
+            const baseFontSize = Math.max(11, 14 * scaleY);
+            this.overlay.style.fontSize = `${baseFontSize}px`;
+            this.overlay.style.padding = `${26 * scaleY}px ${24 * scaleX}px`;
+
+            // Scala proporzionalmente i titoli e i pulsanti
+            const title = this.overlay.querySelector(".cyber-title");
+            if (title) title.style.fontSize = `${20 * scaleY}px`;
+
+            const btn = this.overlay.querySelector("#end-match-accept-btn");
+            if (btn) btn.style.height = `${42 * scaleY}px`;
+        };
+
+        posizionaOverlay();
+
+        // Registra i listener di resize per ricalcolare la posizione
+        this.posizionaOverlayListener = posizionaOverlay;
+        this.scale.on("resize", posizionaOverlay);
+        window.addEventListener("resize", posizionaOverlay);
+
         // Animazione della progress bar dell'esperienza
         if (isLogged && this.statsAggiornate) {
             setTimeout(() => {
@@ -242,6 +281,11 @@ export default class endMatchScene extends Phaser.Scene {
         if (this.overlay) {
             this.overlay.remove();
             this.overlay = null;
+        }
+        if (this.posizionaOverlayListener) {
+            this.scale.off("resize", this.posizionaOverlayListener);
+            window.removeEventListener("resize", this.posizionaOverlayListener);
+            this.posizionaOverlayListener = null;
         }
     }
 }
