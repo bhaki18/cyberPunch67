@@ -605,6 +605,14 @@ export default class ArenaScene extends Phaser.Scene {
             this.hpEnemy = 0;
         }
 
+        // Knockback (sbalzo di lato) e stordimento se è una super
+        if (isSuper && this.NPC && this.player) {
+            const direzioneKnockback = this.player.x < this.NPC.x ? 1 : -1;
+            this.NPC.setVelocityX(direzioneKnockback * 650);
+            this.NPC.setVelocityY(-250); // Spinta verso l'alto
+            this.npcAttackCounter = 20; // Blocca azioni/movimento bot per 20 frame (~330ms)
+        }
+
         // Effetto numero di danno fluttuante e vibrazione del personaggio
         if (this.NPC && this.NPC.fx) {
             const size = isSuper ? 36 : 28;
@@ -844,12 +852,27 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    riceviDannoPlayer(danno) {
+    riceviDannoPlayer(danno, isSuper = false) {
         if (this.hpPlayer <= 0) return;
 
         this.hpPlayer -= danno;
         if (this.hpPlayer < 0) {
             this.hpPlayer = 0;
+        }
+
+        // Knockback (sbalzo di lato) e stordimento se è una super
+        if (isSuper && this.player && this.NPC) {
+            const direzioneKnockback = this.NPC.x < this.player.x ? 1 : -1;
+            this.player.setVelocityX(direzioneKnockback * 650);
+            this.player.setVelocityY(-250); // Spinta verso l'alto
+            
+            // Stordimento: disabilita temporaneamente i movimenti del player per 330ms
+            this.playerCanMove = false;
+            this.time.delayedCall(330, () => {
+                if (this.hpPlayer > 0 && !this.matchEnded) {
+                    this.playerCanMove = true;
+                }
+            });
         }
 
         // Effetto numero di danno fluttuante e vibrazione del personaggio
@@ -1544,7 +1567,7 @@ export default class ArenaScene extends Phaser.Scene {
             });
 
             this.socket.on("opponentHit", (data) => {
-                this.riceviDannoPlayer(data.damage);
+                this.riceviDannoPlayer(data.damage, data.isSuper);
             });
 
             this.socket.on("playerDisconnected", (data) => {
