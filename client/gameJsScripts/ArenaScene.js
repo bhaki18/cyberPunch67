@@ -617,8 +617,8 @@ export default class ArenaScene extends Phaser.Scene {
             // Determina la direzione in base al lato della texture dell'attaccante al momento del colpo
             const dir = direzioneKnockback !== null ? direzioneKnockback : (this.player.flipX ? -1 : 1);
 
-            // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (200ms)
-            this.time.delayedCall(201, () => {
+            // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (210ms per sicurezza di pulizia tween)
+            this.time.delayedCall(210, () => {
                 if (this.NPC && this.hpEnemy > 0 && !this.matchEnded) {
                     this.NPC.setVelocityX(dir * 900); // Sbalzo in stile Super Smash Bros
                     this.NPC.setVelocityY(-400); // Lancio verso l'alto
@@ -757,8 +757,10 @@ export default class ArenaScene extends Phaser.Scene {
         // Decrementa i contatori
         if (this.npcAttackCounter > 0) {
             this.npcAttackCounter--;
-            // Ferma il movimento orizzontale durante l'attacco
-            this.NPC.setVelocityX(0);
+            // Ferma il movimento orizzontale solo se il bot sta effettivamente attaccando
+            if (this.npcState === "attacking1" || this.npcState === "attacking2" || this.npcState === "superAttacking") {
+                this.NPC.setVelocityX(0);
+            }
             return;
         }
 
@@ -924,8 +926,8 @@ export default class ArenaScene extends Phaser.Scene {
             // Determina la direzione in base al lato della texture dell'attaccante al momento del colpo
             const dir = direzioneKnockback !== null ? direzioneKnockback : (this.NPC.flipX ? -1 : 1);
 
-            // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (200ms)
-            this.time.delayedCall(200, () => {
+            // Applica lo sbalzo solo dopo la fine dell'effetto ShakeFx (210ms per sicurezza di pulizia tween)
+            this.time.delayedCall(210, () => {
                 if (this.player && this.hpPlayer > 0 && !this.matchEnded) {
                     this.player.setVelocityX(dir * 900); // Sbalzo in stile Super Smash Bros
                     this.player.setVelocityY(-400); // Lancio verso l'alto
