@@ -167,11 +167,11 @@ export default class ArenaScene extends Phaser.Scene {
     controllaCadutaMappa() {
         // Se il player cade sotto y = 640 (fuori dallo schermo), muore
         if (this.player && this.player.y > 640 && this.hpPlayer > 0) {
-            this.riceviDannoPlayer(this.hpPlayer);
+            this.riceviDannoPlayer(this.hpPlayer, false, null, true);
         }
         // Se il bot/nemico cade sotto y = 640 (fuori dallo schermo), muore
         if (this.NPC && this.NPC.y > 640 && this.hpEnemy > 0) {
-            this.riceviDannoNPC(this.hpEnemy);
+            this.riceviDannoNPC(this.hpEnemy, false, null, true);
         }
     }
 
@@ -602,8 +602,9 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    riceviDannoNPC(danno, isSuper = false, direzioneKnockback = null) {
+    riceviDannoNPC(danno, isSuper = false, direzioneKnockback = null, ignoreImmunity = false) {
         if (this.hpEnemy <= 0) return;
+        if (!ignoreImmunity && this.NPC && this.NPC._immune) return;
 
         this.hpEnemy -= danno;
         if (this.hpEnemy < 0) {
@@ -632,6 +633,7 @@ export default class ArenaScene extends Phaser.Scene {
             const color = isSuper ? "ffaa00" : "ff3333";
             this.NPC.fx.DamageNumberFx(danno, size, color);
             this.NPC.fx.ShakeFx(200, isSuper ? 10 : 5);
+            this.NPC.fx.ImmuneFx(1000);
         }
 
         // Incrementa la carica della super (fino al massimo consentito) SOLO se non è un super attacco
@@ -905,8 +907,9 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    riceviDannoPlayer(danno, isSuper = false, direzioneKnockback = null) {
+    riceviDannoPlayer(danno, isSuper = false, direzioneKnockback = null, ignoreImmunity = false) {
         if (this.hpPlayer <= 0) return;
+        if (!ignoreImmunity && this.player && this.player._immune) return;
 
         this.hpPlayer -= danno;
         if (this.hpPlayer < 0) {
@@ -942,6 +945,7 @@ export default class ArenaScene extends Phaser.Scene {
             const color = isSuper ? "ffaa00" : "ff3333";
             this.player.fx.DamageNumberFx(danno, size, color);
             this.player.fx.ShakeFx(200, isSuper ? 10 : 5);
+            this.player.fx.ImmuneFx(1000);
         }
 
         // Ridimensiona barra HP del player

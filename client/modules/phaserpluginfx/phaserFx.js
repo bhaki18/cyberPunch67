@@ -12,6 +12,7 @@ import FloatXFx from "./methods/floatX.js";
 import FloatYFx from "./methods/floatY.js";
 import ClickFx from "./methods/click.js";
 import StopFx from "./utils/stop.js";
+import ImmuneFx from "./methods/immune.js";
 
 /**
  * Classe principale fx che si associa ad un GameObject Phaser per esporre effetti grafici e di animazione.
@@ -36,6 +37,7 @@ export default class fx {
         this._floatY = new FloatYFx(target);
         this._click = new ClickFx(target);
         this._stop = new StopFx(target);
+        this._immune = new ImmuneFx(target);
     }
 
     /**
@@ -196,6 +198,11 @@ export default class fx {
      */
     StopAllFx() {
         return this.StopFx();
+    }
+
+    ImmuneFx(duration) {
+        this._immune.ImmuneFx(duration);
+        return new ChainFx(this, 0, duration || 1000);
     }
 }
 
