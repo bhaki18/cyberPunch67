@@ -500,7 +500,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack1;
-                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa1);
+                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa1, 1);
             }
         }
 
@@ -509,7 +509,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack2;
-                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa2);
+                this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa2, 2);
             }
         }
 
@@ -522,7 +522,7 @@ export default class ArenaScene extends Phaser.Scene {
                     this.player.setTexture(this.personaggioPlayer.dati.nome);
                     this.counter = this.delayAttack;
                     this.playerState = playerAttacks.superAttack;
-                    this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc, true);
+                    this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc, "super");
                 } else {
                     console.log("Super attacco non ancora carico!");
                 }
@@ -539,13 +539,23 @@ export default class ArenaScene extends Phaser.Scene {
 
     }
 
-    creaHitboxAttacco(danno, isSuper = false) {
+    creaHitboxAttacco(danno, tipoMossa = 1) {
         if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
 
-        // Sposta la hitbox a sinistra o a destra in base a dove guarda il player (più vicina e piccola per attacchi normali)
-        const larghezza = isSuper ? 70 : 36;
-        const altezza = isSuper ? 60 : 30;
-        const offsetDirezione = this.player.flipX ? (isSuper ? -70 : -35) : (isSuper ? 70 : 35);
+        // Regole dimensione hitbox: mossa 1 (danno minore) è la più piccola, mossa 2 (danno maggiore) è la più grande, la super è una via di mezzo.
+        let larghezza = 36;
+        let altezza = 30;
+        let offsetDirezione = this.player.flipX ? -35 : 35;
+
+        if (tipoMossa === 2) {
+            larghezza = 80;
+            altezza = 60;
+            offsetDirezione = this.player.flipX ? -55 : 55;
+        } else if (tipoMossa === "super") {
+            larghezza = 60;
+            altezza = 45;
+            offsetDirezione = this.player.flipX ? -45 : 45;
+        }
 
         const hitboxX = this.player.x + offsetDirezione;
         const hitboxY = this.player.y - 30; // Altezza mezza persona (ancorata ai piedi)
@@ -562,7 +572,7 @@ export default class ArenaScene extends Phaser.Scene {
         this.physics.add.overlap(hitbox, this.NPC, () => {
             if (!colpoAndatoASegno) {
                 colpoAndatoASegno = true;
-                this.riceviDannoNPC(danno, isSuper);
+                this.riceviDannoNPC(danno, tipoMossa === "super");
             }
         });
 
@@ -757,14 +767,14 @@ export default class ArenaScene extends Phaser.Scene {
                 const randomAttacco = Phaser.Math.Between(1, 2);
                 if (randomAttacco === 1) {
                     this.npcState = "attacking1";
-                    this.npcAttackCounter = 30; // Blocca movimento per 30 frame
+                    this.npcAttackCounter = 30; // Si blocca movimento per 30 frame
                     this.npcCooldownCounter = 60; // Cooldown di 60 frame prima del prossimo attacco
-                    this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa1);
+                    this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa1, 1);
                 } else {
                     this.npcState = "attacking2";
                     this.npcAttackCounter = 30;
                     this.npcCooldownCounter = 60;
-                    this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa2);
+                    this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa2, 2);
                 }
             }
         }
@@ -779,13 +789,23 @@ export default class ArenaScene extends Phaser.Scene {
         }
     }
 
-    creaHitboxAttaccoNPC(danno) {
+    creaHitboxAttaccoNPC(danno, tipoMossa = 1) {
         if (!this.NPC || !this.player || this.hpPlayer <= 0) return;
 
-        // Sposta la hitbox a sinistra o a destra in base a dove guarda l'NPC
-        const larghezza = 36;
-        const altezza = 30;
-        const offsetDirezione = this.NPC.flipX ? -35 : 35;
+        // Regole dimensione hitbox: mossa 1 (danno minore) è la più piccola, mossa 2 (danno maggiore) è la più grande, la super è una via di mezzo.
+        let larghezza = 36;
+        let altezza = 30;
+        let offsetDirezione = this.NPC.flipX ? -35 : 35;
+
+        if (tipoMossa === 2) {
+            larghezza = 80;
+            altezza = 60;
+            offsetDirezione = this.NPC.flipX ? -55 : 55;
+        } else if (tipoMossa === "super") {
+            larghezza = 60;
+            altezza = 45;
+            offsetDirezione = this.NPC.flipX ? -45 : 45;
+        }
 
         const hitboxX = this.NPC.x + offsetDirezione;
         const hitboxY = this.NPC.y - 30;
@@ -1625,7 +1645,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack1;
-                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa1);
+                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa1, 1);
 
                 if (this.socket) {
                     this.socket.emit("playerAttack", { attackType: "attacking1" });
@@ -1638,7 +1658,7 @@ export default class ArenaScene extends Phaser.Scene {
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
                 this.counter = this.delayAttack;
                 this.playerState = playerAttacks.attack2;
-                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa2);
+                this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa2, 2);
 
                 if (this.socket) {
                     this.socket.emit("playerAttack", { attackType: "attacking2" });
@@ -1655,7 +1675,7 @@ export default class ArenaScene extends Phaser.Scene {
                     this.player.setTexture(this.personaggioPlayer.dati.nome);
                     this.counter = this.delayAttack;
                     this.playerState = playerAttacks.superAttack;
-                    this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniSuperAttakc, true);
+                    this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniSuperAttakc, "super");
 
                     if (this.socket) {
                         this.socket.emit("playerAttack", { attackType: "superAttacking" });
@@ -1674,13 +1694,23 @@ export default class ArenaScene extends Phaser.Scene {
         }
     }
 
-    creaHitboxAttaccoOnline(danno, isSuper = false) {
+    creaHitboxAttaccoOnline(danno, tipoMossa = 1) {
         if (!this.player || !this.NPC || this.hpEnemy <= 0) return;
 
-        // Sposta la hitbox a sinistra o a destra in base a dove guarda il player (più vicina e piccola per attacchi normali)
-        const larghezza = isSuper ? 70 : 36;
-        const altezza = isSuper ? 60 : 30;
-        const offsetDirezione = this.player.flipX ? (isSuper ? -70 : -35) : (isSuper ? 70 : 35);
+        // Regole dimensione hitbox: mossa 1 (danno minore) è la più piccola, mossa 2 (danno maggiore) è la più grande, la super è una via di mezzo.
+        let larghezza = 36;
+        let altezza = 30;
+        let offsetDirezione = this.player.flipX ? -35 : 35;
+
+        if (tipoMossa === 2) {
+            larghezza = 80;
+            altezza = 60;
+            offsetDirezione = this.player.flipX ? -55 : 55;
+        } else if (tipoMossa === "super") {
+            larghezza = 60;
+            altezza = 45;
+            offsetDirezione = this.player.flipX ? -45 : 45;
+        }
 
         const hitboxX = this.player.x + offsetDirezione;
         const hitboxY = this.player.y - 30;
@@ -1695,10 +1725,10 @@ export default class ArenaScene extends Phaser.Scene {
         this.physics.add.overlap(hitbox, this.NPC, () => {
             if (!colpoAndatoASegno) {
                 colpoAndatoASegno = true;
-                this.riceviDannoNPC(danno, isSuper);
+                this.riceviDannoNPC(danno, tipoMossa === "super");
 
                 if (this.socket) {
-                    this.socket.emit("playerHit", { damage: danno, isSuper: isSuper });
+                    this.socket.emit("playerHit", { damage: danno, isSuper: tipoMossa === "super" });
                 }
             }
         });
