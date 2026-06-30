@@ -21,6 +21,32 @@ export default class ArenaScene extends Phaser.Scene {
         this.playerName = data.nomePlayer;
         this.livelloPlayer = data.livelloPlayer;
         this.personaggiTot = data.personaggiTot;
+
+        // Validazione dei permessi di Admin per il personaggio speciale "Admin ADP"
+        const isAdmin = window.player && window.player.permessi === "admin";
+        let characterNameToCheck = "";
+        if (this.personaggioPlayer) {
+            if (this.modalita === "online") {
+                characterNameToCheck = this.personaggioPlayer.nome;
+            } else {
+                characterNameToCheck = this.personaggioPlayer.dati ? this.personaggioPlayer.dati.nome : "";
+            }
+        }
+
+        if (characterNameToCheck === "Admin ADP" && !isAdmin) {
+            console.warn("[ArenaScene] Tentativo di utilizzo abusivo di Admin ADP. Reset a Dominant Red.");
+            const defaultPg = this.personaggiTot.find(p => p.nome === "Dominant Red");
+            if (this.modalita === "online") {
+                this.personaggioPlayer = { nome: "Dominant Red", dati: defaultPg };
+            } else {
+                if (this.personaggioPlayer && this.personaggioPlayer.dati) {
+                    this.personaggioPlayer.dati = defaultPg;
+                } else {
+                    this.personaggioPlayer = { dati: defaultPg };
+                }
+            }
+        }
+
         this.socket = window.socket;
         this.matchEnded = false;
 

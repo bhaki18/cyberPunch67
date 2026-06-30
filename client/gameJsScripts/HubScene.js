@@ -161,7 +161,9 @@ export default class HubScene extends Phaser.Scene {
                     this.personaggiTot[i].nome
                 ).setScale(1);
 
-                const bloccato = this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer;
+                const isAdmin = window.player && window.player.permessi === "admin";
+                const bloccato = this.personaggiTot[i].nome === "Admin ADP" ? !isAdmin : (this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer);
+
 
                 if (bloccato) {
                     frame.setTint(0x111111);
@@ -344,7 +346,9 @@ export default class HubScene extends Phaser.Scene {
                     this.personaggiTot[i].nome
                 ).setScale(0.85);
 
-                const bloccato = this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer;
+                const isAdmin = window.player && window.player.permessi === "admin";
+                const bloccato = this.personaggiTot[i].nome === "Admin ADP" ? !isAdmin : (this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer);
+
 
                 if (bloccato) {
                     frame.setTint(0x111111);
@@ -627,8 +631,9 @@ export default class HubScene extends Phaser.Scene {
                 this.localReadyStatusText.setText("NOT READY").setColor("#ff0000");
                 this.tastoProntoOnline.clearTint();
 
+                const isAdmin = window.player && window.player.permessi === "admin";
                 this.onlineFrames.forEach(f => {
-                    const bloccato = f.dati.livelloDiUnlock > this.livelloPlayer;
+                    const bloccato = f.dati.nome === "Admin ADP" ? !isAdmin : (f.dati.livelloDiUnlock > this.livelloPlayer);
                     if (!bloccato) f.frame.setInteractive({ pixelPerfect: true });
                 });
             });

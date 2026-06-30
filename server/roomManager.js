@@ -134,6 +134,15 @@ function selezionaPersonaggio(socket, personaggioNome) {
     const stanza = stanze[roomId];
     const username = socket.player ? socket.player.username : "Guest";
 
+    // Validazione dei permessi di Admin per il personaggio speciale "Admin ADP"
+    if (personaggioNome === "Admin ADP") {
+        const isAdmin = socket.player && socket.player.permessi === "admin";
+        if (!isAdmin) {
+            console.warn(`[RoomManager] WARNING: Player ${username} tried to select Admin ADP without admin permissions! Resetting to Dominant Red.`);
+            personaggioNome = "Dominant Red";
+        }
+    }
+
     stanza.selezioni[username] = personaggioNome;
 
     // Invia la selezione all'avversario

@@ -36,29 +36,103 @@ export default function caricaPersonaggiTot() {
             nomeMossa1: "CyberPush",
             danniMossa1: 25,
             nomeMossa2: "CyberKick",
-            danniMossa2: 35,
+            danniMossa2: 45,
             nomeSuperAttack: "Raggio elettromagnetico",
-            danniSuperAttakc: 300,
+            danniSuperAttakc: 280,
             livelloDiUnlock: 1,
             descrizione: "Dominant Red è un cyborg venuto da un pianeta futuristico dove la tecnologia si è evoluta 1000 anni oltre a quella della terra",
             nomeImgRef: "dominantRed"
         });
 
-
-
     const KyraMist = new Personaggio(
         {
             nome: "Kyra Mist",
+            hp: 850,
+            nomeMossa1: "Fendente Rapido",
+            danniMossa1: 18,
+            nomeMossa2: "Nebbia Tagliente",
+            danniMossa2: 32,
+            nomeSuperAttack: "Tempesta di Spilli",
+            danniSuperAttakc: 240,
             livelloDiUnlock: 1,
+            descrizione: "Kyra Mist si sposta silenziosa come la nebbia, colpendo i nemici con attacchi fulminei prima che possano reagire.",
             nomeImgRef: "kyraMist"
-        }
-    )
+        });
 
-    const ChromeBlack = new Personaggio({ nome: "Chrome Black", nomeImgRef: "chromeBlack", livelloDiUnlock: 10 });
-    const ScarletNova = new Personaggio({ nome: "Scarlet Nova", nomeImgRef: "scarletNova", livelloDiUnlock: 15 });
-    const SYNDelta = new Personaggio({ nome: "SYNDelta", nomeImgRef: "SYNDelta", livelloDiUnlock: 20 });
-    const HellbyteUnit = new Personaggio({ nome: "Hellbyte Unit", nomeImgRef: "HellbyteUnit", livelloDiUnlock: 25 });
-    const AdminAdp = new Personaggio({ nome: "Admin ADP", nomeImgRef: "AdminAdp", livelloDiUnlock: 10000000000000 });
+    const ChromeBlack = new Personaggio(
+        {
+            nome: "Chrome Black",
+            hp: 1200,
+            nomeMossa1: "Pugno di Ferro",
+            danniMossa1: 30,
+            nomeMossa2: "Schianto Gravitazionale",
+            danniMossa2: 55,
+            nomeSuperAttack: "Buco Nero Portatile",
+            danniSuperAttakc: 320,
+            livelloDiUnlock: 10,
+            descrizione: "Chrome Black possiede una corazza in titanio rinforzato che gli permette di assorbire enormi quantità di danno.",
+            nomeImgRef: "chromeBlack"
+        });
+
+    const ScarletNova = new Personaggio(
+        {
+            nome: "Scarlet Nova",
+            hp: 800,
+            nomeMossa1: "Scintilla Nova",
+            danniMossa1: 28,
+            nomeMossa2: "Lancia Fiamme Laser",
+            danniMossa2: 52,
+            nomeSuperAttack: "Supernova Termonucleare",
+            danniSuperAttakc: 350,
+            livelloDiUnlock: 15,
+            descrizione: "Scarlet Nova convoglia l'energia termonucleare delle stelle per scatenare esplosioni devastanti, a scapito delle difese.",
+            nomeImgRef: "scarletNova"
+        });
+
+    const SYNDelta = new Personaggio(
+        {
+            nome: "SYNDelta",
+            hp: 950,
+            nomeMossa1: "Pulsazione Shock",
+            danniMossa1: 22,
+            nomeMossa2: "Catena di Fulmini",
+            danniMossa2: 40,
+            nomeSuperAttack: "Sovraccarico Delta",
+            danniSuperAttakc: 290,
+            livelloDiUnlock: 20,
+            descrizione: "SYNDelta manipola i flussi di corrente elettrica per sovraccaricare e distruggere i circuiti degli avversari.",
+            nomeImgRef: "SYNDelta"
+        });
+
+    const HellbyteUnit = new Personaggio(
+        {
+            nome: "Hellbyte Unit",
+            hp: 1100,
+            nomeMossa1: "Infezione Malware",
+            danniMossa1: 35,
+            nomeMossa2: "Artigli del Demone",
+            danniMossa2: 60,
+            nomeSuperAttack: "Protocollo Apocalisse",
+            danniSuperAttakc: 330,
+            livelloDiUnlock: 25,
+            descrizione: "Un'unità infettata da un virus distruttivo che ha sviluppato impulsi altamente distruttivi ed incontrollabili.",
+            nomeImgRef: "HellbyteUnit"
+        });
+
+    const AdminAdp = new Personaggio(
+        {
+            nome: "Admin ADP",
+            hp: 9999,
+            nomeMossa1: "Ban Hammer",
+            danniMossa1: 99,
+            nomeMossa2: "Cancella File",
+            danniMossa2: 199,
+            nomeSuperAttack: "BSOD (Blue Screen)",
+            danniSuperAttakc: 999,
+            livelloDiUnlock: 10000000000000,
+            descrizione: "L'amministratore supremo del sistema. Ha il controllo totale sul codice del gioco e può eliminare gli avversari all'istante.",
+            nomeImgRef: "AdminAdp"
+        });
 
 
     const pgs = [];

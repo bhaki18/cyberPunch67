@@ -22,14 +22,17 @@ export default class InventoryScene extends Phaser.Scene {
         this.personaggiTot = data.personaggiTot ? [...data.personaggiTot] : [];
         this.livelloPlayer = data.livello;
 
+        const isAdmin = window.player && window.player.permessi === "admin";
 
         this.personaggiSbloccati = this.personaggiTot.filter(pg => {
-            if (pg.livelloDiUnlock <= data.livello) return pg;
+            const isLocked = pg.nome === "Admin ADP" ? !isAdmin : (pg.livelloDiUnlock > data.livello);
+            return !isLocked;
         });
 
 
         this.personaggiNonSbloccati = this.personaggiTot.filter(pg => {
-            if (pg.livelloDiUnlock > data.livello) return pg;
+            const isLocked = pg.nome === "Admin ADP" ? !isAdmin : (pg.livelloDiUnlock > data.livello);
+            return isLocked;
         });
 
         // console.log("personaggi totali:");
@@ -80,7 +83,8 @@ export default class InventoryScene extends Phaser.Scene {
                 textureKey
             ).setScale(2.5);
 
-            const bloccato = this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer;
+            const isAdmin = window.player && window.player.permessi === "admin";
+            const bloccato = this.personaggiTot[i].nome === "Admin ADP" ? !isAdmin : (this.personaggiTot[i].livelloDiUnlock > this.livelloPlayer);
             if (bloccato) {
                 frame.setTint(0x111111);
                 personaggioOverFrame.setTint(0x111111);
@@ -132,7 +136,8 @@ export default class InventoryScene extends Phaser.Scene {
                 // Rimuovi evidenziazione dal frame precedente
                 if (this.selectedFrameObj) {
                     const pgPrecedente = this.selectedFrameObj.pg;
-                    const precedentementeBloccato = pgPrecedente.livelloDiUnlock > this.livelloPlayer;
+                    const isAdmin = window.player && window.player.permessi === "admin";
+                    const precedentementeBloccato = pgPrecedente.nome === "Admin ADP" ? !isAdmin : (pgPrecedente.livelloDiUnlock > this.livelloPlayer);
                     this.selectedFrameObj.frame.setTint(precedentementeBloccato ? 0x111111 : 0xffffff);
                     this.selectedFrameObj.sprite.setTint(precedentementeBloccato ? 0x111111 : 0xffffff);
                 }
@@ -292,8 +297,11 @@ export default class InventoryScene extends Phaser.Scene {
         this.statsSuperText.setText(`SUPER (${pg.nomeSuperAttack || "super attacco"}): ${pg.danniSuperAttakc !== undefined ? pg.danniSuperAttakc : 100} DMG`);
         
         // Stato sblocco
-        if (pg.livelloDiUnlock > this.livelloPlayer) {
-            this.statsUnlockText.setText(`LOCKED (REQ. LV. ${pg.livelloDiUnlock})`).setColor("#ff003c");
+        const isAdmin = window.player && window.player.permessi === "admin";
+        const bloccato = pg.nome === "Admin ADP" ? !isAdmin : (pg.livelloDiUnlock > this.livelloPlayer);
+        if (bloccato) {
+            const reqText = pg.nome === "Admin ADP" ? "ADMIN ONLY" : `REQ. LV. ${pg.livelloDiUnlock}`;
+            this.statsUnlockText.setText(`LOCKED (${reqText})`).setColor("#ff003c");
         } else {
             this.statsUnlockText.setText(`UNLOCKED`).setColor("#00ff66");
         }
