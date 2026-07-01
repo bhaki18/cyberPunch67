@@ -1,3 +1,5 @@
+
+
 export default class RotateFx {
     /**
      * @param {Phaser.GameObjects.GameObject} target - L'oggetto di gioco che deve ruotare.
@@ -12,6 +14,9 @@ export default class RotateFx {
      * @param {number} duration - Durata dell'effetto in millisecondi. di base 500ms
      * @param {number} intensity - Limite massimo di rotazione in gradi.
      * @param {number} speed - Velocità di oscillazione per frame in gradi.
+     * 
+     * @example
+     * rotateFx.rotate(500, 15, 2);
      */
     rotate(duration, intensity, speed) {
         const target = this.target;

@@ -34,7 +34,21 @@ export default class StopFx {
             'click': '_click',
             'clickfx': '_click',
             'changetexture': '_changeTexture',
-            'changetexturefx': '_changeTexture'
+            'changetexturefx': '_changeTexture',
+            'slime': '_slime',
+            'slimefx': '_slime',
+            'immune': '_immune',
+            'immunefx': '_immune',
+            'damagenumber': '_damageNumber',
+            'damagenumberfx': '_damageNumber',
+            'popin': '_popIn',
+            'popinfx': '_popIn',
+            'popout': '_popOut',
+            'popoutfx': '_popOut',
+            'fadein': '_fadeIn',
+            'fadeinfx': '_fadeIn',
+            'fadeout': '_fadeOut',
+            'fadeoutfx': '_fadeOut'
         };
 
         if (effectName && typeof effectName === 'string') {
@@ -54,7 +68,14 @@ export default class StopFx {
                 '_floatX',
                 '_floatY',
                 '_click',
-                '_changeTexture'
+                '_changeTexture',
+                '_slime',
+                '_immune',
+                '_damageNumber',
+                '_popIn',
+                '_popOut',
+                '_fadeIn',
+                '_fadeOut'
             ];
 
             activeTweens.forEach(key => {

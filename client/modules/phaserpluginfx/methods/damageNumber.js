@@ -17,6 +17,9 @@ export default class DamageNumberFx {
      * @param {number} size - Dimensione del testo in pixel.
      * @param {string} color - Colore del testo in esadecimale (senza '#' iniziale).
      * @returns {void}
+     * 
+     * @example
+     * damageNumberFx.DamageNumberFx(100, 32, "ff0000");
      */
     DamageNumberFx(number, size, color) {
         const target = this.target;
@@ -71,4 +74,4 @@ export default class DamageNumberFx {
             }
         });
     }
-}
+}

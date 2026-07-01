@@ -686,6 +686,9 @@ export default class ArenaScene extends Phaser.Scene {
         this.player.setVelocity(0, 0);
         this.NPC.setVelocity(0, 0);
         this.NPC.setTint(0x333333); // Grigio scuro per nemico sconfitto
+        if (this.NPC && this.NPC.fx) {
+            this.NPC.fx.ExplodeFx();
+        }
 
         // Testo di Vittoria
         const stileVittoria = {
@@ -988,6 +991,9 @@ export default class ArenaScene extends Phaser.Scene {
         this.player.setVelocity(0, 0);
         this.NPC.setVelocity(0, 0);
         this.player.setTint(0x333333); // Grigio scuro per player sconfitto
+        if (this.player && this.player.fx) {
+            this.player.fx.ExplodeFx();
+        }
 
         // Testo di Sconfitta
         const stileSconfitta = {

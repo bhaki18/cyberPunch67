@@ -18,6 +18,9 @@ export default class GetBiggerFx {
      * @param {number} duration - Durata in millisecondi dell'effetto. di base 500ms
      * @param {number} speed - Numero di frame in cui l'animazione mantiene ciascuna scala.
      * @returns {void}
+     * 
+     * @example
+     * getBiggerFx.GetBiggerFx(1.2, "nuovaTexture", 500, 5);
      */
     GetBiggerFx(size, texture, duration, speed) {
         const target = this.target;

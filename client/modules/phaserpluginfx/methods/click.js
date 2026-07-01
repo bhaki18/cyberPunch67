@@ -1,3 +1,5 @@
+import { Tweens } from "phaser";
+
 // Funzione di utilità per scurire matematicamente un colore in formato intero (es: 0x0000ff)
 function darkenColor(hex, percent) {
     const r = Math.max(0, Math.floor(((hex >> 16) & 0xff) * (1 - percent / 100)));
@@ -15,6 +17,9 @@ export default class ClickFx {
     /**
      * Simula il click di un bottone con uno spostamento verso il basso 
      * e uno scurimento temporaneo del colore (tinta per sprite/immagini, fillColor per forme).
+     * 
+     * @example
+     * clickFx.ClickFx();
      */
     ClickFx() {
         const target = this.target;
@@ -62,7 +67,7 @@ export default class ClickFx {
                     if (typeof target.setTint === 'function') {
                         target.setTint(0xDDDDDD); // Scurisce lo Sprite/Image
                     } else if (typeof target.setFillStyle === 'function') {
-                        // Per i rettangoli/forme, applichiamo la versioni scurita del colore originale
+                        // Per i rettangoli/forme, applichiamo la versione scurita del colore originale
                         target.setFillStyle(colorStep1, oAlpha);
                     }
 

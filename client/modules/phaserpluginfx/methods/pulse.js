@@ -17,6 +17,9 @@ export default class PulseFx {
      * @param {number} intensity - Intensità della variazione di scala (divisa per 10, es: 1 = +0.1 scala).
      * @param {number} speed - Velocità di variazione ad ogni frame (diviso per 100, es: 5 = 0.05).
      * @returns {void}
+     * 
+     * @example
+     * pulseFx.PulseFx(1300, 1, 5);
      */
     PulseFx(duration, intensity, speed) {
         const target = this.target;

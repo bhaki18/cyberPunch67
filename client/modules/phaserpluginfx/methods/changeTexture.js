@@ -17,6 +17,9 @@ export default class ChangeTextureFx {
      * @param {number} duration - La durata totale dell'effetto in millisecondi. di base 500ms
      * @param {number} speed - La frequenza di alternanza espressa in numero di fotogrammi (frame).
      * @returns {void}
+     * 
+     * @example
+     * changeTextureFx.ChangeTextureFx("nuovaTexture", 500, 5);
      */
     ChangeTextureFx(texture, duration, speed) {
         const target = this.target;

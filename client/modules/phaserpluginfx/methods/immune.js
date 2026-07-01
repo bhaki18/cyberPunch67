@@ -15,6 +15,9 @@ export default class ImmuneFx {
      * Modifica l'opacità (alpha) dell'oggetto target in modo intermittente e oscillante
      * per simulare uno stato temporaneo di invulnerabilità/immunità.
      * @param {number} [duration=1000] - Durata dell'effetto di immunità in millisecondi.
+     * 
+     * @example
+     * immuneFx.ImmuneFx(1000);
      */
     ImmuneFx(duration) {
         const target = this.target;

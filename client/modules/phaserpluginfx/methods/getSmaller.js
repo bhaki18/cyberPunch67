@@ -18,6 +18,9 @@ export default class GetSmallerFx {
      * @param {number} duration - Durata in millisecondi dell'effetto. di base 500ms
      * @param {number} speed - Numero di frame in cui l'animazione mantiene ciascuna scala.
      * @returns {void}
+     * 
+     * @example
+     * getSmallerFx.GetSmallerFx(0.8, "nuovaTexture", 500, 5);
      */
     GetSmallerFx(size, texture, duration, speed) {
         const target = this.target;

@@ -5,12 +5,15 @@ export default class FloatXFx {
     }
 
     /**
-     * 
+     * Fa oscillare orizzontalmente l'oggetto seguendo un moto armonico semplice.
      * @param {number} distance - raggio del'effetto in px, di base 50
      * @param {number} duration - durata in ms dell'effetto,di base 1000
      * @param {boolean} loop - se infinito.di base false
      * @param {number} speed - velocità del float in px. di base 5
-     * @returns 
+     * @returns {void}
+     * 
+     * @example
+     * floatXFx.FloatXFx(50, 1000, true, 5);
      */
     FloatXFx(distance, duration, loop, speed) {
         const target = this.target;

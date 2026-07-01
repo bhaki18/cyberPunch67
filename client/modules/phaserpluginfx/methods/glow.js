@@ -1,3 +1,5 @@
+
+
 export default class GlowFx {
     constructor(target) {
         this.target = target;
@@ -9,6 +11,9 @@ export default class GlowFx {
      * @param {number} duration - Durata in ms del glow. di base 1000ms
      * @param {number} size - Grandezza in intero del glow.
      * @param {boolean} loop - Booleano per ripetizione all'infinito.
+     * 
+     * @example
+     * glowFx.GlowFx(1000, 2, false);
      */
     GlowFx(duration, size, loop) {
         const target = this.target;

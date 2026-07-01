@@ -63,7 +63,7 @@ const AggiungiExp = async (playerId, expDaAggiungere) => {
   if (!player) throw new Error("Player non trovato");
 
   player.exp += expDaAggiungere;
-  
+
   // Sali di livello ogni 100 exp
   while (player.exp >= 100) {
     player.exp -= 100;
