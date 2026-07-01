@@ -696,6 +696,9 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.NPC && this.NPC.fx) {
             this.NPC.fx.ExplodeFx();
         }
+        this.time.delayedCall(1000, () => {
+            if (this.NPC) this.NPC.setVisible(false);
+        });
 
         // Testo di Vittoria
         const stileVittoria = {
@@ -1001,6 +1004,9 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.player && this.player.fx) {
             this.player.fx.ExplodeFx();
         }
+        this.time.delayedCall(1000, () => {
+            if (this.player) this.player.setVisible(false);
+        });
 
         // Testo di Sconfitta
         const stileSconfitta = {
