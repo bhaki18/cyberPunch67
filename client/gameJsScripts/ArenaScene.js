@@ -141,15 +141,22 @@ export default class ArenaScene extends Phaser.Scene {
         this.animaSfondo();
 
         if (this.modalita === "offline") {
-            this.playerMovesOffline();
-            this.animazioniPlayer(this.playerState);
-
-            this.npcBehaviorOffline();
-            this.animazioniNPC(this.npcState);
+            if (this.player && !this.player._exploded && this.hpPlayer > 0) {
+                this.playerMovesOffline();
+                this.animazioniPlayer(this.playerState);
+            }
+            if (this.NPC && !this.NPC._exploded && this.hpEnemy > 0) {
+                this.npcBehaviorOffline();
+                this.animazioniNPC(this.npcState);
+            }
         } else if (this.modalita === "online") {
-            this.playerMovesOnline();
-            this.animazioniPlayer(this.playerState);
-            this.animazioniNPC(this.npcState);
+            if (this.player && !this.player._exploded && this.hpPlayer > 0) {
+                this.playerMovesOnline();
+                this.animazioniPlayer(this.playerState);
+            }
+            if (this.NPC && !this.NPC._exploded && this.hpEnemy > 0) {
+                this.animazioniNPC(this.npcState);
+            }
 
             // Invia dati di movimento e animazione se abilitato
             if (this.playerCanMove && this.player && this.socket) {
@@ -1050,7 +1057,7 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     animazioniNPC(npcState) {
-        if (!this.NPC) return;
+        if (!this.NPC || this.NPC._exploded) return;
 
         if (this.npcAttackCounter > 0) {
             if (this.modalita === "online") {
@@ -1349,7 +1356,7 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     animazioniPlayer(playerState) {
-        if (!this.player) return;
+        if (!this.player || this.player._exploded) return;
 
         if (this.animationCounter > 0) {
             this.animationCounter--;

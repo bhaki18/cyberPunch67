@@ -47,6 +47,19 @@ export default class ExplodeFx {
             target._activeExplodeFx.StopExplodeFx();
         }
 
+        // Segna l'oggetto come esploso per bloccare altri aggiornamenti (animazioni/scale)
+        target._exploded = true;
+
+        // Ferma le animazioni correnti
+        if (target.anims) {
+            target.anims.stop();
+        }
+
+        // Disabilita la fisica dell'oggetto
+        if (target.body) {
+            target.body.enable = false;
+        }
+
         // Memorizza il riferimento a questa istanza di esplosione attiva sul target
         target._activeExplodeFx = this;
 
@@ -97,6 +110,12 @@ export default class ExplodeFx {
         if (target.frags) {
             this._stopDebris.StopDebrisFx(target.frags);
             target.frags = null;
+        }
+
+        // Ripristina lo stato
+        delete target._exploded;
+        if (target.body) {
+            target.body.enable = true;
         }
 
         // Rimuove il riferimento all'esplosione attiva
