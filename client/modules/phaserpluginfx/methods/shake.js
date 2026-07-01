@@ -1,5 +1,4 @@
 
-import * as Phaser from "phaser";
 /**
  * Classe per l'effetto di vibrazione (shake) su un oggetto Phaser.
  */

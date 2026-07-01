@@ -1,6 +1,5 @@
 import DebrisFx from "../../AddOn/devMethods/debris.js";
 import StopDebrisFx from "../../AddOn/devUtils/stopDebris.js";
-import * as Phaser from 'phaser';
 
 
 /**
