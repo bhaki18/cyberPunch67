@@ -1,5 +1,6 @@
 const express = require("express");
 const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -38,6 +39,11 @@ const io = new Server(server, {
     ],
     methods: ["GET", "POST"]
   }
+});
+
+// Ping endpoint to keep the server awake
+app.get("/ping", (req, res) => {
+  res.status(200).send("pong");
 });
 
 
@@ -217,6 +223,25 @@ io.on("connection", (socket) => {
 
   server.listen(PORT, "0.0.0.0", () => {
     console.log("Server attivo su " + PORT);
+
+    // Self-request to prevent Render spin-down (every 10 minutes)
+    const selfUrl = process.env.RENDER_EXTERNAL_URL || process.env.SELF_URL;
+    if (selfUrl) {
+      const intervalTime = 10 * 60 * 1000; // 10 minutes
+      setInterval(() => {
+        const pingUrl = `${selfUrl}/ping`;
+        const protocol = pingUrl.startsWith("https") ? https : http;
+        
+        protocol.get(pingUrl, (res) => {
+          console.log(`[Self-Ping] Sent to ${pingUrl} - Status: ${res.statusCode}`);
+        }).on("error", (err) => {
+          console.error("[Self-Ping] Error calling self-request:", err.message);
+        });
+      }, intervalTime);
+      console.log(`[Self-Ping] Configured for ${selfUrl}/ping every 10 minutes.`);
+    } else {
+      console.log("[Self-Ping] RENDER_EXTERNAL_URL or SELF_URL environment variable is not defined. Self-ping skipped.");
+    }
   });
 
 })();
