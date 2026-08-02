@@ -1,74 +1,111 @@
 # ⚡ CYBERPUNCH 67
 
-Benvenuto in **CyberPunch 67**, un picchiaduro bidimensionale e futuristico sviluppato interamente con il framework **Phaser JS** e sincronizzato in tempo reale tramite **Socket.io** e **Node.js**. Il gioco si basa su un sistema di progressione a livelli, un roster di personaggi bilanciato e un sistema di matchmaking e ranking online.
+Welcome to **CyberPunch 67**, a futuristic 2D fighting game developed with **Phaser 3**, featuring real-time multiplayer synchronized via **Socket.io** and **Node.js**. The game features a level-based progression system, a balanced character roster, online matchmaking, ranked leaderboards, and an offline survival mode against intelligent AI bots.
 
 ---
 
-## 🎮 Modalità di Gioco
+## 🎮 Game Modes
 
-### 🤖 Modalità Offline (Arcade / Sopravvivenza)
-Scegli il tuo combattente e affronta un'ondata progressiva di ben **100 NPC** (robot controllati dal computer). Gli NPC sono statisticamente più deboli singolarmente, ma cercheranno di sopraffarti con il loro numero. 
-* **Obiettivo**: Sconfiggi tutti i 100 nemici per guadagnare punti esperienza (EXP) ed incrementare il tuo livello.
+### 🤖 Offline Mode (Arcade / Survival)
+Choose your fighter and face a progressive wave of **100 AI-controlled bots**. While individual bots are statistically weaker, they attempt to overwhelm you with sheer numbers.
+* **Objective**: Defeat all 100 enemies to earn Experience Points (EXP) and level up your fighter.
 
-### 🌐 Modalità Online (Ranked Multiplayer)
-Sfida altri giocatori reali collegandoti a stanze online gestite in tempo reale dal server. 
-* Scegliete i vostri personaggi e confermate lo stato di pronto.
-* Ogni scontro assegna punti per la classifica **Ranked** in caso di vittoria e ne sottrae in caso di sconfitta.
-* Se entrambi i giocatori selezionano lo stesso combattente, l'avversario apparirà con una colorazione rossastra per distinguerlo visivamente ed evitare confusione.
+### 🌐 Online Mode (Ranked Multiplayer)
+Challenge real players in real-time matches hosted by the server.
+* Select your character and set your ready state.
+* Every match awards **Ranked Points** for victories (+10 RP) and deducts points for defeats (-9 RP).
+* **Mirror Matches**: If both players select the same character, the opponent is rendered with a reddish tint to visually differentiate them during combat.
 
 ---
 
-## 🎹 Controlli di Gioco
+## 🎹 Game Controls
 
-Il gioco supporta pienamente la **tastiera** ed il **Gamepad/Controller**:
+CyberPunch 67 fully supports both **Keyboard** and **Gamepad / Controller**:
 
-| Azione | Tasto Tastiera | Tasto Gamepad |
+| Action | Keyboard Key | Gamepad / Controller |
 | :--- | :---: | :---: |
-| **Muoviti a Sinistra** | `A` | D-Pad Sinistra / Analogico Sinistro |
-| **Muoviti a Destra** | `D` | D-Pad Destra / Analogico Sinistro |
-| **Salto / Doppio Salto** | `SPAZIO` | D-Pad Su / Pulsante `A` (Bottom) |
-| **Attacco 1 (Leggero)** | `C` | Pulsante `X` (Left) |
-| **Attacco 2 (Pesante)** | `V` | Pulsante `Y` (Top) |
-| **Super Attacco** | `B` | Pulsante `B` (Right) |
+| **Move Left** | `A` | D-Pad Left / Left Analog Stick |
+| **Move Right** | `D` | D-Pad Right / Left Analog Stick |
+| **Jump / Double Jump** | `SPACE` | D-Pad Up / `A` Button (Bottom) |
+| **Attack 1 (Light)** | `C` | `X` Button (Left) |
+| **Attack 2 (Heavy)** | `V` | `Y` Button (Top) |
+| **Super Attack** | `B` | `B` Button (Right) |
 
 ---
 
-## 🚀 Caratteristiche Tecniche e Logiche Speciali
+## 🚀 Technical Highlights & Core Mechanics
 
-* **Intelligenza Artificiale Avanzata (Bot)**: Gli NPC offline non cadono più facilmente dalle piattaforme. Effettuano una scansione del terreno davanti a loro; se rilevano un vuoto, provano a saltarlo con precisione oppure si fermano sul bordo.
-* **Fisica di Caduta Libera**: I bordi inferiori dell'arena sono aperti. Se un combattente cade fuori dalle piattaforme di gioco e scende sotto il limite dello schermo, muore all'istante subendo danno fatale.
-* **Super Attacco con Sbalzo (Knockback) e Stordimento**: Colpire con la mossa Super sbalza l'avversario lontano in direzione opposta con una spinta aerea, applicando uno stordimento (stun) totale di 530ms. Lo sbalzo fisico avviene con un ritardo di 200ms, lasciando che l'animazione di impatto e vibrazione dello schermo (*ShakeFx*) si completi per un feedback più potente.
-* **Dimensione Dinamica delle Hitbox**: Le aree di impatto delle mosse scalano con il danno causato:
-  * *Attacco 1* (Danno minore): area ridotta (`36x30 px`).
-  * *Attacco 2* (Danno maggiore): area massima (`80x60 px`).
-  * *Super Attacco* (Concentrato): area intermedia (`60x45 px`).
-* **Sblocco Condizionale Personaggi**: Alcuni personaggi si sbloccano salendo di livello (es. Chrome Black), mentre il personaggio speciale **Admin ADP** è accessibile unicamente a chi possiede i permessi di `"admin"` salvati nel database.
-* **Transizioni Scena Fluide**: Tutte le transizioni (Hub, Menù, Caricamenti, Schermata Risultati) sono accompagnate da sfumature della telecamera (*Fade In* e *Fade Out*). I caricamenti offline sono stati velocizzati a 2 secondi e avvengono interamente in background per evitare il pop-in degli elementi.
+* **Advanced Bot AI**: Offline NPCs perform real-time terrain scanning to detect ledges and gaps, deciding whether to jump with precision or halt at the edge to prevent falling.
+* **Free Fall Arena Physics**: Arena bottom bounds are open. Characters knocked or stepping off the platform beneath screen limits suffer instant fatal damage.
+* **Super Attack Knockback & Stun**: Executing a Super Attack launches opponents away with an airborne vector while applying a **530ms stun**. Physical knockback triggers after a **200ms delay**, aligning with impact animation and screen shake effects (*ShakeFx*).
+* **Dynamic Hitbox Scaling**: Attack hitboxes scale dynamically based on damage output:
+  * *Attack 1* (Light): Small footprint (`36x30 px`).
+  * *Attack 2* (Heavy): Maximum area (`80x60 px`).
+  * *Super Attack* (Focused burst): Medium footprint (`60x45 px`).
+* **Conditional Character Unlocks**: Unlock new fighters by leveling up (e.g., *Chrome Black*). Special characters like **Admin ADP** are restricted exclusively to accounts with `"admin"` database privileges.
+* **Smooth Scene Transitions**: Full camera fade-in/fade-out transitions between scenes (Hub, Main Menu, Preloader, Results). Background loading reduces offline preloading to 2 seconds without visual pop-in.
 
 ---
 
-## 🛠️ Installazione e Avvio Locale
+## 🛠️ Tech Stack
 
-### Requisiti
-* [Node.js](https://nodejs.org/) installato sul sistema.
+* **Frontend**: HTML5, CSS3, JavaScript (ES6+), [Phaser 3](https://phaser.io/)
+* **Backend**: Node.js, Express, [Socket.io](https://socket.io/)
+* **Database & Auth**: MongoDB, Mongoose, JSON Web Tokens (JWT), Bcrypt
+* **Utilities**: Concurrently, http-server, Phaser FX Plugins
 
-### Procedura
-1. Clona il progetto o scarica i sorgenti.
-2. Apri il terminale nella cartella del progetto ed installa le dipendenze:
+---
+
+## 💻 Local Setup & Installation
+
+### Prerequisites
+* [Node.js](https://nodejs.org/) (v16+ recommended)
+* [MongoDB](https://www.mongodb.com/) instance (local or MongoDB Atlas)
+
+### Steps
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/bhaki18/cyberPunch67.git
+   cd cyberPunch67
+   ```
+
+2. **Install project dependencies**:
    ```bash
    npm install
+   cd server && npm install
+   cd database && npm install
+   cd client && npm install
+   cd ..
    ```
-3. Avvia il server di gioco:
+
+3. **Configure Environment Variables**:
+   Set `MONGODB_URI` in your environment or server configuration (e.g., `mongodb://localhost:27017/phaserGameJamDB`).
+
+4. **Start the Development Servers**:
    ```bash
-   npm start
+   npm run dev
    ```
-4. Apri il browser all'indirizzo fornito (generalmente `http://localhost:3000`).
+   *(Or start server and client separately with `npm run server` and `npm run client`)*
+
+5. **Play the Game**:
+   Open your browser and navigate to `http://localhost:5500` (or `http://localhost:3000`).
 
 ---
 
-## 👥 Sviluppatore e Contatti
+## 👏 Credits & Author
 
-* **Sviluppatore Principale**: Angelo Del Piano
+**CyberPunch 67** was created, designed, and developed by:
+
+* **Creator & Lead Developer**: **Angelo Del Piano**
 * **Email**: [angelodelpiano2317@gmail.com](mailto:angelodelpiano2317@gmail.com)
+* **GitHub Profile**: [@bhaki18](https://github.com/bhaki18)
 
-*Nota: Il gioco è in costante sviluppo e nuove arene o bilanciamenti vengono aggiunti periodicamente.*
+Special credits and recognition to **Angelo Del Piano** for building the entire game architecture, networking logic, custom AI bot behavior, database integration, and combat system.
+
+---
+
+## 📄 License
+
+This project is licensed under the [ISC License](LICENSE).
+
