@@ -36,7 +36,7 @@ const config = {
     // Configurazione del target dei fotogrammi al secondo (FPS)
     fps: {
         target: 60,
-        forceSetTimeOut: true
+        forceSetTimeOut: false
     },
 
     // Ridimensionamento e centramento automatico del gioco all'interno della finestra del browser

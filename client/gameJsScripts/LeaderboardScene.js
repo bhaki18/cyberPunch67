@@ -11,6 +11,7 @@ export default class LeaderboardScene extends Phaser.Scene {
     }
 
     create() {
+        this.sound.play("modal_open", { volume: 0.35 });
         this.socket = window.socket;
 
         // Crea il form contenitore overlay HTML
@@ -66,6 +67,7 @@ export default class LeaderboardScene extends Phaser.Scene {
             this.socket.emit("richiediClassifica");
 
             this.socket.once("rispostaClassifica", (data) => {
+                this.sound.play("access_granted", { volume: 0.35 });
                 this.popolaClassifica(data);
             });
         } else {
@@ -144,6 +146,7 @@ export default class LeaderboardScene extends Phaser.Scene {
     }
 
     chiudi() {
+        this.sound.play("modal_close", { volume: 0.35 });
         this.shutdown();
         this.scene.stop("LeaderboardScene");
         this.scene.wake("MainMenuScene");

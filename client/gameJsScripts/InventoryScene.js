@@ -42,7 +42,30 @@ export default class InventoryScene extends Phaser.Scene {
         // console.log("personaggi Non sbloccati:");
         // console.table(this.personaggiNonSbloccati); /*stranamente funziona tutto alla prima botta*/
     }
+    avviaInventoryBgm() {
+        if (this.sound.sounds && this.sound.sounds.some(s => s.key === "inventory_bgm" && s.isPlaying)) {
+            return;
+        }
+        this.sound.stopByKey("inventory_bgm");
+        if (this.sound.sounds) {
+            this.sound.sounds.filter(s => s.key === "inventory_bgm").forEach(s => this.sound.remove(s));
+        }
+        this.sound.play("inventory_bgm", { loop: true, volume: 0.3 });
+    }
+
     create() {
+        this.avviaInventoryBgm();
+
+        this.events.once("shutdown", () => {
+            this.sound.stopByKey("inventory_bgm");
+        });
+        this.events.on("sleep", () => {
+            this.sound.stopByKey("inventory_bgm");
+        });
+        this.events.on("wake", () => {
+            this.avviaInventoryBgm();
+        });
+
         this.minY = -850;
         this.maxY = 0;
 
@@ -105,6 +128,7 @@ export default class InventoryScene extends Phaser.Scene {
             frame.setInteractive({ pixelPerfect: true });
 
             frame.on("pointerover", () => {
+                this.sound.play("card_hover", { volume: 0.25 });
                 this.tweens.add({
                     targets: frame,
                     scale: 4.7,
@@ -133,6 +157,7 @@ export default class InventoryScene extends Phaser.Scene {
             });
 
             frame.on("pointerup", () => {
+                this.sound.play("equip_select", { volume: 0.35 });
                 // Rimuovi evidenziazione dal frame precedente
                 if (this.selectedFrameObj) {
                     const pgPrecedente = this.selectedFrameObj.pg;

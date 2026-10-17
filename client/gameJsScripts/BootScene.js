@@ -29,9 +29,10 @@ export default class BootScene extends Phaser.Scene {
         // Avvia la SystemScene in background per gestire fin da subito l'F5 (fullscreen) e stati globali
         this.scene.launch("SystemScene");
 
-        // Caricamento dei loghi introduttivi
+        // Caricamento dei loghi introduttivi e audio di avvio
         this.load.image("logoDelGioco", "../assets/BootScene/logoDelGioco.png");
         this.load.image("logoDiPhaserJS", "../assets/BootScene/logoDiPhaserJS.png");
+        this.load.audio("game_intro", "../assets/sounds/BootScene/game_intro.wav");
 
 
         // --- 1. CARICAMENTO DELLE RISORSE LOCALI DELLA SCHERMATA DI PRELOAD
@@ -86,9 +87,12 @@ export default class BootScene extends Phaser.Scene {
             }
         });
 
-        // Avvio temporizzato della prima animazione dopo 500ms
+        // Avvio temporizzato della prima animazione dopo 500ms con jingle di avvio
         setTimeout(() => {
             this.animationCanStart = true;
+            try {
+                this.sound.play("game_intro", { volume: 0.4 });
+            } catch (e) {}
         }, 500);
     }
 

@@ -28,7 +28,14 @@ export default class HubScene extends Phaser.Scene {
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
 
-        // TODO: Aggiungere menu interattivo dell'hub, chat room o pulsanti di matchmaking.
+        // Assicura che la musica di sottofondo del menu continui a suonare senza sovrapporsi
+        if (!this.sound.sounds || !this.sound.sounds.some(s => s.key === "bgm_menu" && s.isPlaying)) {
+            this.sound.stopByKey("bgm_menu");
+            if (this.sound.sounds) {
+                this.sound.sounds.filter(s => s.key === "bgm_menu").forEach(s => this.sound.remove(s));
+            }
+            this.sound.play("bgm_menu", { loop: true, volume: 0.35 });
+        }
 
         // SFONDO DELL'HUB
         const xSfondo = 0;
@@ -124,6 +131,7 @@ export default class HubScene extends Phaser.Scene {
             });
 
             btnTorna.on("pointerup", () => {
+                this.sound.play("btn_click", { volume: 0.45 });
                 this.cameras.main.fadeOut(500, 0, 0, 0);
                 this.cameras.main.once("camerafadeoutcomplete", () => {
                     this.scene.start("MainMenuScene", {
@@ -194,6 +202,7 @@ export default class HubScene extends Phaser.Scene {
                     });
 
                     frame.on("pointerup", () => {
+                        this.sound.play("char_select", { volume: 0.35 });
                         // Rimuovi tint dalla selezione precedente
                         if (this.personaggioSelezionato) {
                             this.personaggioSelezionato.frame.clearTint();
@@ -276,6 +285,7 @@ export default class HubScene extends Phaser.Scene {
             })
 
             this.tastoProntoOffline.on("pointerup", () => {
+                this.sound.play("ready_toggle", { volume: 0.45 });
                 this.tweens.add({
                     targets: this.tastoProntoOffline,
                     y: this.tastoProntoOffline.y + 10,
@@ -286,6 +296,7 @@ export default class HubScene extends Phaser.Scene {
                         this.tastoProntoOffline.y -= 10;
                         this.tastoProntoOffline.clearTint();
                         
+                        this.sound.stopByKey("bgm_menu");
                         this.cameras.main.fadeOut(500, 0, 0, 0);
                         this.cameras.main.once("camerafadeoutcomplete", () => {
                             this.scene.start("ArenaScene", {
@@ -386,6 +397,7 @@ export default class HubScene extends Phaser.Scene {
 
                     frame.on("pointerup", () => {
                         if (this.localReady) return;
+                        this.sound.play("char_select", { volume: 0.35 });
 
                         if (this.personaggioSelezionato) {
                             this.personaggioSelezionato.frame.clearTint();
@@ -451,6 +463,7 @@ export default class HubScene extends Phaser.Scene {
             });
             this.tastoProntoOnline.on("pointerup", () => {
                 if (this.localReady) return;
+                this.sound.play("ready_toggle", { volume: 0.45 });
 
                 this.localReady = true;
                 this.localReadyStatusText.setText("READY").setColor("#00ff00");
@@ -567,6 +580,7 @@ export default class HubScene extends Phaser.Scene {
             });
 
             this.socket.on("roomReady", (data) => {
+                this.sound.play("match_found", { volume: 0.45 });
                 const avversario = data.players.find(p => p !== this.nomePlayer) || "Guest";
                 this.titoloOpponent.setText(avversario.toUpperCase());
 
@@ -609,6 +623,7 @@ export default class HubScene extends Phaser.Scene {
 
             this.socket.on("startMatch", (data) => {
                 this.rimuoviSocketListeners();
+                this.sound.stopByKey("bgm_menu");
 
                 const mioPersonaggioNome = this.personaggioSelezionato ? this.personaggioSelezionato.dati.nome : "Dominant Red";
                 const avversarioNome = data.players.find(p => p !== this.nomePlayer) || "Guest";

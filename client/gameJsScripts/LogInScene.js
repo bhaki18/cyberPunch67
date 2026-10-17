@@ -6,6 +6,7 @@ export default class LogInScene extends Phaser.Scene {
     }
 
     create() {
+        this.sound.play("modal_open", { volume: 0.35 });
         // Create the Cyberpunk form container overlay
         this.overlay = document.createElement("div");
         this.overlay.className = "cyber-modal-overlay";
@@ -44,6 +45,7 @@ export default class LogInScene extends Phaser.Scene {
         // Close button listener
         const closeBtn = this.overlay.querySelector("#cyber-close-btn");
         closeBtn.addEventListener("click", () => {
+            this.sound.play("modal_close", { volume: 0.35 });
             this.shutdown();
             this.scene.stop();
             this.scene.wake("MainMenuScene");
@@ -52,6 +54,7 @@ export default class LogInScene extends Phaser.Scene {
         // Sign up link listener
         const signupLink = this.overlay.querySelector("#cyber-signup-link");
         signupLink.addEventListener("click", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.shutdown();
             this.scene.stop();
             this.scene.launch("SignUpScene");
@@ -110,6 +113,7 @@ export default class LogInScene extends Phaser.Scene {
             const data = await res.json();
 
             if (!data.token) {
+                this.sound.play("access_denied", { volume: 0.45 });
                 console.log("Login fallito:", data);
                 this.isLoggingIn = false;
 
@@ -139,6 +143,7 @@ export default class LogInScene extends Phaser.Scene {
             });
 
             this.socket.on("connect", () => {
+                this.sound.play("access_granted", { volume: 0.5 });
                 window.socket.isLogged = true;
 
                 // vai all'hub
@@ -148,6 +153,7 @@ export default class LogInScene extends Phaser.Scene {
             });
 
         } catch (err) {
+            this.sound.play("access_denied", { volume: 0.45 });
             console.error("Errore login:", err);
             this.isLoggingIn = false;
 

@@ -27,6 +27,11 @@ export default class endMatchScene extends Phaser.Scene {
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
 
+        // Avvia la musica dei risultati di fine match
+        if (!this.sound.get("bgm_results") || !this.sound.get("bgm_results").isPlaying) {
+            this.sound.play("bgm_results", { loop: true, volume: 0.35 });
+        }
+
         const isLogged = localStorage.getItem("playerLogged") === "true";
         const { width, height } = this.scale;
 
@@ -233,13 +238,18 @@ export default class endMatchScene extends Phaser.Scene {
 
         // Listener del bottone di accettazione/ritorno
         const acceptBtn = this.overlay.querySelector("#end-match-accept-btn");
+        acceptBtn.addEventListener("mouseenter", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
+        });
         acceptBtn.addEventListener("click", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.ritorna();
         });
 
         const loginLink = this.overlay.querySelector("#go-login-direct");
         if (loginLink) {
             loginLink.addEventListener("click", () => {
+                this.sound.play("btn_click", { volume: 0.45 });
                 this.ritorna(true);
             });
         }
@@ -283,6 +293,7 @@ export default class endMatchScene extends Phaser.Scene {
     }
 
     shutdown() {
+        this.sound.stopByKey("bgm_results");
         if (this.overlay) {
             this.overlay.remove();
             this.overlay = null;

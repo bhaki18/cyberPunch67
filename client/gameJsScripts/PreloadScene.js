@@ -30,11 +30,12 @@ export default class PreloadScene extends Phaser.Scene {
     preload() {
 
 
-        // --- 2. AVVIO DEL CARICAMENTO DEGLI ASSET DI GIOCO (MAIN MENU, ARENE, PLAYER)
+        // --- 2. AVVIO DEL CARICAMENTO DEGLI ASSET DI GIOCO (MAIN MENU, ARENE, PLAYER, AUDIO)
         this.loadMainMenu();
         this.loadInventory();
         this.loadHub();
         this.loadArena();
+        this.loadAudio();
 
         // --- 3. CREAZIONE DELLA BARRA DI CARICAMENTO GRAFICA (PHASER GRAPHICS)
         // --- 1. SFONDO E PARTICELLE (CARICATI DA BOOTSCENE) ---
@@ -141,6 +142,7 @@ export default class PreloadScene extends Phaser.Scene {
         // Al completamento del caricamento, attende un input utente per avviare il menu principale
         this.load.on("complete", () => {
             this.input.once("pointerdown", () => {
+                this.sound.play("game_start", { volume: 0.5 });
                 this.animationChangeSceneCanStart = true;
             });
         });
@@ -383,6 +385,62 @@ export default class PreloadScene extends Phaser.Scene {
         });
     }
 
+    /**
+     * Carica tutte le risorse audio ed effetti sonori del gioco.
+     */
+    loadAudio() {
+        // --- MAIN MENU SCENE ---
+        this.load.audio("bgm_menu", "../assets/sounds/MainMenuScene/bgm_menu.mp3");
+        this.load.audio("btn_hover", "../assets/sounds/MainMenuScene/btn_hover.wav");
+        this.load.audio("btn_click", "../assets/sounds/MainMenuScene/btn_click.wav");
+        this.load.audio("btn_whoosh", "../assets/sounds/MainMenuScene/btn_whoosh.wav");
+
+        // --- HUB SCENE ---
+        this.load.audio("char_select", "../assets/sounds/HubScene/char_select.wav");
+        this.load.audio("ready_toggle", "../assets/sounds/HubScene/ready_toggle.wav");
+        this.load.audio("match_found", "../assets/sounds/HubScene/match_found.wav");
+
+        // --- ARENA SCENE COMBAT & BGM ---
+        this.load.audio("bgm_battle", "../assets/sounds/ArenaScene/bgm_battle.mp3");
+        this.load.audio("light_punch", "../assets/sounds/ArenaScene/light_punch.wav");
+        this.load.audio("heavy_punch", "../assets/sounds/ArenaScene/heavy_punch.wav");
+        this.load.audio("hit_impact", "../assets/sounds/ArenaScene/hit_impact.wav");
+        this.load.audio("super_laser", "../assets/sounds/ArenaScene/super_laser.wav");
+        this.load.audio("super_charge", "../assets/sounds/ArenaScene/super_charge.wav");
+        this.load.audio("jump", "../assets/sounds/ArenaScene/jump.wav");
+        this.load.audio("land", "../assets/sounds/ArenaScene/land.wav");
+        this.load.audio("fall_void", "../assets/sounds/ArenaScene/fall_void.wav");
+        this.load.audio("super_impact", "../assets/sounds/ArenaScene/super_impact.wav");
+        this.load.audio("victory_jingle", "../assets/sounds/ArenaScene/victory_jingle.mp3");
+        this.load.audio("defeat_jingle", "../assets/sounds/ArenaScene/defeat_jingle.mp3");
+
+        // --- PRELOAD & INTRO ---
+        this.load.audio("game_start", "../assets/sounds/PreloadScene/game_start.wav");
+
+        // --- INVENTORY SCENE ---
+        this.load.audio("inventory_bgm", "../assets/sounds/InventoryScene/inventory_bgm.mp3");
+        this.load.audio("equip_select", "../assets/sounds/InventoryScene/equip_select.wav");
+        this.load.audio("card_hover", "../assets/sounds/InventoryScene/card_hover.wav");
+
+        // --- RESULTS SCENE ---
+        this.load.audio("bgm_results", "../assets/sounds/endMatchScene/bgm_results.mp3");
+
+        // --- SYSTEM & MODALS ---
+        this.load.audio("modal_open", "../assets/sounds/SystemScene/modal_open.wav");
+        this.load.audio("modal_close", "../assets/sounds/SystemScene/modal_close.wav");
+        this.load.audio("access_granted", "../assets/sounds/SystemScene/access_granted.wav");
+        this.load.audio("access_denied", "../assets/sounds/SystemScene/access_denied.wav");
+
+        // --- ARENA SCENE ANNOUNCER ---
+        this.load.audio("voice_ready", "../assets/sounds/ArenaScene/voice_ready.wav");
+        this.load.audio("voice_3", "../assets/sounds/ArenaScene/voice_3.wav");
+        this.load.audio("voice_2", "../assets/sounds/ArenaScene/voice_2.wav");
+        this.load.audio("voice_1", "../assets/sounds/ArenaScene/voice_1.wav");
+        this.load.audio("voice_go", "../assets/sounds/ArenaScene/voice_go.wav");
+        this.load.audio("voice_you_win", "../assets/sounds/ArenaScene/voice_you_win.wav");
+        this.load.audio("voice_you_lose", "../assets/sounds/ArenaScene/voice_you_lose.wav");
+        this.load.audio("voice_game_over", "../assets/sounds/ArenaScene/voice_game_over.wav");
+    }
 
     createAnimationPersonaggi() {
         this.personaggi.forEach(personaggio => {

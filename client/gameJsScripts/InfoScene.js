@@ -11,6 +11,7 @@ export default class InfoScene extends Phaser.Scene {
     }
 
     create() {
+        this.sound.play("modal_open", { volume: 0.35 });
         this.overlay = document.createElement("div");
         this.overlay.className = "cyber-modal-overlay info-panel";
         this.overlay.innerHTML = `
@@ -116,7 +117,11 @@ export default class InfoScene extends Phaser.Scene {
         const panels = this.overlay.querySelectorAll(".tab-panel");
 
         tabs.forEach(tab => {
+            tab.addEventListener("mouseenter", () => {
+                this.sound.play("btn_hover", { volume: 0.25 });
+            });
             tab.addEventListener("click", () => {
+                this.sound.play("btn_click", { volume: 0.4 });
                 tabs.forEach(t => t.classList.remove("active"));
                 panels.forEach(p => p.classList.remove("active"));
                 tab.classList.add("active");
@@ -126,7 +131,11 @@ export default class InfoScene extends Phaser.Scene {
 
         // --- CLOSE BUTTON (DOM)
         const closeBtn = this.overlay.querySelector("#info-close-btn");
+        closeBtn.addEventListener("mouseenter", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
+        });
         closeBtn.addEventListener("click", () => {
+            this.sound.play("modal_close", { volume: 0.35 });
             this.shutdown();
             this.scene.stop("InfoScene");
             this.scene.wake("MainMenuScene");

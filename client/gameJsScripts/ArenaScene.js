@@ -85,10 +85,29 @@ export default class ArenaScene extends Phaser.Scene {
         // Inizializzazione stato precedente pulsanti Gamepad
         this.statoGamepadPrecedente = null;
 
-        // Inizializzazione cooldown mosse player
+        // Inizializzazione cooldown mosse player (in millisecondi)
         this.cooldownMossa1 = 0;
         this.cooldownMossa2 = 0;
         this.cooldownSuper = 0;
+
+        // Tracciamento audio stato atterraggio e carica super
+        this.wasGrounded = true;
+        this._superChargedSoundPlayed = false;
+
+        // Variabili per Hitstop, K.O. drammatico e Overdrive Aura
+        this._inHitstop = false;
+        this._koTriggered = false;
+        this._playerOverdriveActive = false;
+        this._enemyOverdriveActive = false;
+        this.playerOverdriveTimer = null;
+        this.enemyOverdriveTimer = null;
+
+        // Netcode Rate Limiting & Interpolazione per avversario online
+        this.lastNetUpdate = 0;
+        this.targetOpponentX = null;
+        this.targetOpponentY = null;
+        this.targetOpponentVx = 0;
+        this.targetOpponentVy = 0;
     }
 
     /**
@@ -97,6 +116,32 @@ export default class ArenaScene extends Phaser.Scene {
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
 
+        // Ferma eventuale BGM del menu e pulisci le vecchie istanze
+        this.sound.stopByKey("bgm_menu");
+        if (this.sound.sounds) {
+            this.sound.sounds.filter(s => s.key === "bgm_menu").forEach(s => this.sound.remove(s));
+        }
+
+        // Avvia la musica di battaglia dell'arena senza sovrapposizioni
+        if (!this.sound.sounds || !this.sound.sounds.some(s => s.key === "bgm_battle" && s.isPlaying)) {
+            this.sound.stopByKey("bgm_battle");
+            if (this.sound.sounds) {
+                this.sound.sounds.filter(s => s.key === "bgm_battle").forEach(s => this.sound.remove(s));
+            }
+            this.sound.play("bgm_battle", { loop: true, volume: 0.3 });
+        }
+
+        this.events.once("shutdown", () => {
+            this.sound.stopByKey("bgm_battle");
+            this.disattivaOverdrivePlayer();
+            this.disattivaOverdriveEnemy();
+            if (this.physics && this.physics.world) {
+                this.physics.world.isPaused = false;
+            }
+            this.game.events.off("keybindingsUpdated", this.onKeybindingsUpdated, this);
+            this.rimuoviSocketListeners();
+        });
+
         // Estendi i limiti del mondo di fisica verso il basso per consentire la caduta fuori dallo schermo
         this.physics.world.setBounds(0, 0, 800, 1000);
 
@@ -104,16 +149,8 @@ export default class ArenaScene extends Phaser.Scene {
         this.fxSystem = new fxSystem(this);
 
         // --- INPUTS ---
-        // addKeys registra i tasti sul keyboard plugin di Phaser.
-        // Ogni proprietà dell'oggetto diventa un Key ascoltabile con .isDown / JustDown.
-        this.inputManager = this.input.keyboard.addKeys({
-            left: Phaser.Input.Keyboard.KeyCodes.A,
-            right: Phaser.Input.Keyboard.KeyCodes.D,
-            up: Phaser.Input.Keyboard.KeyCodes.SPACE,
-            attack1: Phaser.Input.Keyboard.KeyCodes.C,
-            attack2: Phaser.Input.Keyboard.KeyCodes.V,
-            superAttack: Phaser.Input.Keyboard.KeyCodes.B
-        });
+        this.inizializzaKeybindings();
+        this.game.events.on("keybindingsUpdated", this.onKeybindingsUpdated, this);
 
         if (this.modalita === "offline") {
             this.offlineModGameCreate();
@@ -137,38 +174,58 @@ export default class ArenaScene extends Phaser.Scene {
      * Ciclo di aggiornamento logico dell'arena (eseguito a ogni frame).
      * Gestisce la fisica dei movimenti e il controllo degli input durante la battaglia.
      */
-    update() {
+    update(time, delta) {
+        // Normalizza il delta-time in millisecondi (cap a 100ms per evitare salti dopo cambio tab)
+        const dt = Math.min(delta || 16.66, 100);
         this.animaSfondo();
 
         if (this.modalita === "offline") {
             if (this.player && !this.player._exploded && this.hpPlayer > 0) {
-                this.playerMovesOffline();
-                this.animazioniPlayer(this.playerState);
+                this.playerMovesOffline(dt);
+                this.animazioniPlayer(this.playerState, dt);
             }
             if (this.NPC && !this.NPC._exploded && this.hpEnemy > 0) {
-                this.npcBehaviorOffline();
-                this.animazioniNPC(this.npcState);
+                this.npcBehaviorOffline(dt);
+                this.animazioniNPC(this.npcState, dt);
             }
         } else if (this.modalita === "online") {
             if (this.player && !this.player._exploded && this.hpPlayer > 0) {
-                this.playerMovesOnline();
-                this.animazioniPlayer(this.playerState);
+                this.playerMovesOnline(dt);
+                this.animazioniPlayer(this.playerState, dt);
             }
             if (this.NPC && !this.NPC._exploded && this.hpEnemy > 0) {
-                this.animazioniNPC(this.npcState);
+                this.animazioniNPC(this.npcState, dt);
             }
 
-            // Invia dati di movimento e animazione se abilitato
-            if (this.playerCanMove && this.player && this.socket) {
-                this.socket.emit("playerUpdate", {
-                    x: this.player.x,
-                    y: this.player.y,
-                    vx: this.player.body.velocity.x,
-                    vy: this.player.body.velocity.y,
-                    flipX: this.player.flipX,
-                    state: this.playerState,
-                    superCharge: this.superAttackCharge
-                });
+            // Interpolazione fluida (Lerp) della posizione dell'avversario per eliminare il jitter di rete
+            if (this.targetOpponentX !== null && this.NPC && !this.NPC._exploded && this.hpEnemy > 0) {
+                const dist = Phaser.Math.Distance.Between(this.NPC.x, this.NPC.y, this.targetOpponentX, this.targetOpponentY);
+                if (dist > 180) {
+                    // Teletrasporto immediato se la discrepanza è eccessiva (es. respawn o sbalzo super)
+                    this.NPC.setPosition(this.targetOpponentX, this.targetOpponentY);
+                } else {
+                    // Fattore di lerp proporzionale al delta-time per fluidità indipendente dal framerate
+                    const lerpFactor = Math.min(1, (dt / 1000) * 18);
+                    this.NPC.x = Phaser.Math.Linear(this.NPC.x, this.targetOpponentX, lerpFactor);
+                    this.NPC.y = Phaser.Math.Linear(this.NPC.y, this.targetOpponentY, lerpFactor);
+                }
+                this.NPC.setVelocity(this.targetOpponentVx, this.targetOpponentVy);
+            }
+
+            // Invia dati di movimento e animazione con Rate Limiting a ~28Hz (ogni 35ms) anziché a ogni frame
+            if (this.playerCanMove && this.player && this.socket && !this.matchEnded) {
+                if (time - this.lastNetUpdate >= 35) {
+                    this.lastNetUpdate = time;
+                    this.socket.emit("playerUpdate", {
+                        x: this.player.x,
+                        y: this.player.y,
+                        vx: this.player.body.velocity.x,
+                        vy: this.player.body.velocity.y,
+                        flipX: this.player.flipX,
+                        state: this.playerState,
+                        superCharge: this.superAttackCharge
+                    });
+                }
             }
         }
 
@@ -179,10 +236,12 @@ export default class ArenaScene extends Phaser.Scene {
     controllaCadutaMappa() {
         // Se il player cade sotto y = 640 (fuori dallo schermo), muore
         if (this.player && this.player.y > 640 && this.hpPlayer > 0) {
+            this.sound.play("fall_void", { volume: 0.5 });
             this.riceviDannoPlayer(this.hpPlayer, false, null, true);
         }
         // Se il bot/nemico cade sotto y = 640 (fuori dallo schermo), muore
         if (this.NPC && this.NPC.y > 640 && this.hpEnemy > 0) {
+            this.sound.play("fall_void", { volume: 0.5 });
             this.riceviDannoNPC(this.hpEnemy, false, null, true);
         }
     }
@@ -243,6 +302,64 @@ export default class ArenaScene extends Phaser.Scene {
         const prevSuper = this.statoGamepadPrecedente ? this.statoGamepadPrecedente.superAttack : false;
 
         return keyboardJustDown || (currentSuper && !prevSuper);
+    }
+
+    caricaKeybindings() {
+        const defaultKeys = {
+            left: "A",
+            right: "D",
+            up: "SPACE",
+            attack1: "C",
+            attack2: "V",
+            superAttack: "B"
+        };
+        const salvati = localStorage.getItem("cyberPunch_keybindings");
+        if (salvati) {
+            try {
+                return Object.assign(defaultKeys, JSON.parse(salvati));
+            } catch (e) {
+                return defaultKeys;
+            }
+        }
+        return defaultKeys;
+    }
+
+    risolviPhaserKeyCode(nomeTasto) {
+        if (!nomeTasto) return Phaser.Input.Keyboard.KeyCodes.SPACE;
+        const k = nomeTasto.toString().toUpperCase().trim();
+        if (Phaser.Input.Keyboard.KeyCodes[k] !== undefined) {
+            return Phaser.Input.Keyboard.KeyCodes[k];
+        }
+        if (k === "ARROWUP") return Phaser.Input.Keyboard.KeyCodes.UP;
+        if (k === "ARROWDOWN") return Phaser.Input.Keyboard.KeyCodes.DOWN;
+        if (k === "ARROWLEFT") return Phaser.Input.Keyboard.KeyCodes.LEFT;
+        if (k === "ARROWRIGHT") return Phaser.Input.Keyboard.KeyCodes.RIGHT;
+        if (k === "SPACE") return Phaser.Input.Keyboard.KeyCodes.SPACE;
+        return Phaser.Input.Keyboard.KeyCodes.SPACE;
+    }
+
+    inizializzaKeybindings() {
+        const kb = this.caricaKeybindings();
+        if (this.inputManager) {
+            Object.values(this.inputManager).forEach(key => {
+                if (key && this.input && this.input.keyboard) {
+                    this.input.keyboard.removeKey(key);
+                }
+            });
+        }
+
+        this.inputManager = this.input.keyboard.addKeys({
+            left: this.risolviPhaserKeyCode(kb.left),
+            right: this.risolviPhaserKeyCode(kb.right),
+            up: this.risolviPhaserKeyCode(kb.up),
+            attack1: this.risolviPhaserKeyCode(kb.attack1),
+            attack2: this.risolviPhaserKeyCode(kb.attack2),
+            superAttack: this.risolviPhaserKeyCode(kb.superAttack)
+        });
+    }
+
+    onKeybindingsUpdated() {
+        this.inizializzaKeybindings();
     }
 
     offlineModGameCreate() {
@@ -451,7 +568,7 @@ export default class ArenaScene extends Phaser.Scene {
         );
     }
 
-    playerMovesOffline() {
+    playerMovesOffline(delta = 16.66) {
         if (!this.playerCanMove || !this.player) return;
 
         const playerMoves = {
@@ -498,11 +615,18 @@ export default class ArenaScene extends Phaser.Scene {
             this.jumpsLeft = 2;
         }
 
+        // Effetto sonoro all'atterraggio
+        if (isGrounded && !this.wasGrounded) {
+            this.sound.play("land", { volume: 0.25 });
+        }
+        this.wasGrounded = isGrounded;
+
         if (this.isUpJustPressed() && this.jumpsLeft > 0) {
             // Primo salto: velocità piena. Secondo salto (aereo): leggermente ridotta
             const jumpForce = this.jumpsLeft === 2 ? -400 : -320;
             this.player.setVelocityY(jumpForce);
             this.jumpsLeft--;
+            this.sound.play("jump", { volume: 0.35 });
         }
 
         // --- Airborne State Detection ---
@@ -514,10 +638,10 @@ export default class ArenaScene extends Phaser.Scene {
             }
         }
 
-        this.playerAttacksOffline();
+        this.playerAttacksOffline(delta);
     }
 
-    playerAttacksOffline() {
+    playerAttacksOffline(delta = 16.66) {
 
         const playerAttacks = {
             attack1: "attacking1",
@@ -528,36 +652,41 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (this.isAttack1JustPressed() && this.playerCanAttack && this.cooldownMossa1 <= 0 && !(this.animationCounter > 0)) {
             this.player.setTexture(this.personaggioPlayer.dati.nome);
-            this.cooldownMossa1 = 40; // Cooldown più breve per mossa 1
+            this.cooldownMossa1 = 650; // ~650ms
             this.playerState = playerAttacks.attack1;
+            this.sound.play("light_punch", { volume: 0.45 });
             this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa1, 1);
         }
 
         if (this.isAttack2JustPressed() && this.playerCanAttack && this.cooldownMossa2 <= 0 && !(this.animationCounter > 0)) {
             this.player.setTexture(this.personaggioPlayer.dati.nome);
-            this.cooldownMossa2 = 80; // Cooldown più lungo per mossa 2
+            this.cooldownMossa2 = 1300; // ~1300ms
             this.playerState = playerAttacks.attack2;
+            this.sound.play("heavy_punch", { volume: 0.55 });
             this.creaHitboxAttacco(this.personaggioPlayer.dati.danniMossa2, 2);
         }
 
         if (this.isSuperAttackJustPressed() && this.playerCanAttack && this.cooldownSuper <= 0 && !(this.animationCounter > 0)) {
             if (this.superAttackCharge >= this.maxSuperAttackCharge) {
                 this.superAttackCharge = 0;
+                this._superChargedSoundPlayed = false;
+                this.disattivaOverdrivePlayer();
                 this.aggiornaBarraSuper();
 
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
-                this.cooldownSuper = 60;
+                this.cooldownSuper = 1000; // 1000ms
                 this.playerState = playerAttacks.superAttack;
+                this.sound.play("super_laser", { volume: 0.7 });
                 this.creaHitboxAttacco(this.personaggioPlayer.dati.danniSuperAttakc, "super");
             } else {
                 console.log("Super attacco non ancora carico!");
             }
         }
 
-        // Decremento indipendente dei cooldown per ogni mossa
-        if (this.cooldownMossa1 > 0) this.cooldownMossa1--;
-        if (this.cooldownMossa2 > 0) this.cooldownMossa2--;
-        if (this.cooldownSuper > 0) this.cooldownSuper--;
+        // Decremento framerate-independent dei cooldown per ogni mossa in base al delta
+        if (this.cooldownMossa1 > 0) this.cooldownMossa1 -= delta;
+        if (this.cooldownMossa2 > 0) this.cooldownMossa2 -= delta;
+        if (this.cooldownSuper > 0) this.cooldownSuper -= delta;
     }
 
     creaHitboxAttacco(danno, tipoMossa = 1) {
@@ -604,6 +733,271 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
+    /**
+     * Hitstop (Micro-freeze all'impatto):
+     * Mette temporaneamente in pausa la fisica e le animazioni dei combattenti
+     * per restituire un violento impatto cinematico tipico dei picchiaduro.
+     */
+    applicaHitstop(durataMs = 50) {
+        if (this._inHitstop) return;
+        this._inHitstop = true;
+
+        if (this.physics && this.physics.world) {
+            this.physics.world.isPaused = true;
+        }
+        if (this.player && this.player.anims) {
+            this.player.anims.pause();
+        }
+        if (this.NPC && this.NPC.anims) {
+            this.NPC.anims.pause();
+        }
+
+        this.time.delayedCall(durataMs, () => {
+            if (this.physics && this.physics.world) {
+                this.physics.world.isPaused = false;
+            }
+            if (this.player && this.player.anims) {
+                this.player.anims.resume();
+            }
+            if (this.NPC && this.NPC.anims) {
+                this.NPC.anims.resume();
+            }
+            this._inHitstop = false;
+        });
+    }
+
+    /**
+     * Hitsparks al Neon & Scintille Cyberpunk:
+     * Genera un'esplosione di scintille e scariche al neon al punto d'impatto del colpo.
+     */
+    creaHitsparks(x, y, isSuper = false, tipoMossa = 1) {
+        const coloriSparks = isSuper 
+            ? [0xff0055, 0xffaa00, 0xffffff, 0xff00aa] 
+            : (tipoMossa === 2 ? [0xff0055, 0x00f3ff, 0xffffff] : [0x00f3ff, 0xffffff, 0x00ffaa]);
+        const sparkCount = isSuper ? 18 : (tipoMossa === 2 ? 12 : 8);
+
+        // Flash circolare al centro dell'impatto (onda d'urto)
+        const shockwave = this.add.circle(x, y, isSuper ? 12 : 6, isSuper ? 0xff0055 : 0x00f3ff, 0.9)
+            .setDepth(20)
+            .setBlendMode(Phaser.BlendModes.ADD);
+
+        this.tweens.add({
+            targets: shockwave,
+            scaleX: isSuper ? 4.5 : 2.8,
+            scaleY: isSuper ? 4.5 : 2.8,
+            alpha: 0,
+            duration: isSuper ? 180 : 120,
+            ease: 'Cubic.easeOut',
+            onComplete: () => shockwave.destroy()
+        });
+
+        // Slash incrociato a X o diagonale luminoso
+        const slash = this.add.rectangle(x, y, isSuper ? 50 : 30, 4, 0xffffff)
+            .setDepth(21)
+            .setRotation(Phaser.Math.FloatBetween(-0.8, 0.8))
+            .setBlendMode(Phaser.BlendModes.ADD);
+
+        this.tweens.add({
+            targets: slash,
+            scaleX: 1.8,
+            scaleY: 0.2,
+            alpha: 0,
+            duration: 100,
+            onComplete: () => slash.destroy()
+        });
+
+        // Scintille vettoriali al neon che schizzano all'esterno
+        for (let i = 0; i < sparkCount; i++) {
+            const colore = Phaser.Utils.Array.GetRandom(coloriSparks);
+            const angolo = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            const raggio = Phaser.Math.Between(isSuper ? 35 : 20, isSuper ? 90 : 55);
+            const targetX = x + Math.cos(angolo) * raggio;
+            const targetY = y + Math.sin(angolo) * raggio;
+            const sizeW = Phaser.Math.Between(3, isSuper ? 7 : 5);
+            const sizeH = Phaser.Math.Between(2, 4);
+
+            const spark = this.add.rectangle(x, y, sizeW, sizeH, colore)
+                .setDepth(20)
+                .setRotation(angolo)
+                .setBlendMode(Phaser.BlendModes.ADD);
+
+            this.tweens.add({
+                targets: spark,
+                x: targetX,
+                y: targetY,
+                scaleX: 0.1,
+                scaleY: 0.1,
+                alpha: 0,
+                duration: Phaser.Math.Between(120, isSuper ? 260 : 180),
+                ease: 'Quad.easeOut',
+                onComplete: () => spark.destroy()
+            });
+        }
+    }
+
+    /**
+     * K.O. Dramatic Slow Motion:
+     * Al colpo finale che azzera gli HP, attiva un potente bullet-time,
+     * flash cinematico a tutto schermo, zoom della telecamera e scritta K.O. al neon.
+     */
+    eseguiKODrammatico(isPlayerWinner) {
+        if (this._koTriggered) return;
+        this._koTriggered = true;
+
+        // Flash cinematico
+        this.cameras.main.flash(200, 255, 255, 255, true);
+        this.cameras.main.shake(350, 0.025);
+
+        // Slow motion (Time Dilation al 12% per 2.2 secondi)
+        if (this.fxSystem) {
+            this.fxSystem.RallyFx(2200, 0.12);
+        }
+
+        // Zoom drammatico sulla scena
+        this.cameras.main.zoomTo(1.15, 300, 'Cubic.easeOut');
+        this.time.delayedCall(1600, () => {
+            this.cameras.main.zoomTo(1.0, 500, 'Cubic.easeInOut');
+        });
+
+        // Testo K.O. arcade neon
+        const koText = this.add.text(400, 260, "K.O.", {
+            fontFamily: 'Orbitron',
+            fontSize: '96px',
+            fontStyle: 'bold',
+            color: '#ff0055',
+            stroke: '#00f3ff',
+            strokeThickness: 8,
+            shadow: { color: '#000000', blur: 15, stroke: true, fill: true }
+        }).setOrigin(0.5).setDepth(30).setScale(2.5).setAlpha(0);
+
+        this.tweens.add({
+            targets: koText,
+            scaleX: 1,
+            scaleY: 1,
+            alpha: 1,
+            duration: 350,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.tweens.add({
+                    targets: koText,
+                    scaleX: 1.08,
+                    scaleY: 1.08,
+                    duration: 250,
+                    yoyo: true,
+                    repeat: 2
+                });
+                this.time.delayedCall(1200, () => {
+                    this.tweens.add({
+                        targets: koText,
+                        alpha: 0,
+                        duration: 300,
+                        onComplete: () => koText.destroy()
+                    });
+                });
+            }
+        });
+    }
+
+    /**
+     * Attiva l'Aura Overdrive Cyberpunk sul Player quando la barra Super è al 100%.
+     */
+    attivaOverdrivePlayer() {
+        if (this._playerOverdriveActive || !this.player) return;
+        this._playerOverdriveActive = true;
+
+        if (this.playerOverdriveTimer) {
+            this.playerOverdriveTimer.remove();
+        }
+
+        // Timer particelle neon e afterimage attorno al giocatore
+        this.playerOverdriveTimer = this.time.addEvent({
+            delay: 75,
+            callback: () => {
+                if (!this.player || !this.player.visible || this.hpPlayer <= 0 || !this._playerOverdriveActive) return;
+
+                const sparkX = this.player.x + Phaser.Math.Between(-18, 18);
+                const sparkY = this.player.y + Phaser.Math.Between(-20, 25);
+                const spark = this.add.rectangle(sparkX, sparkY, Phaser.Math.Between(4, 8), Phaser.Math.Between(8, 16), 0x00f3ff, 0.85)
+                    .setDepth(this.player.depth - 1)
+                    .setBlendMode(Phaser.BlendModes.ADD);
+
+                this.tweens.add({
+                    targets: spark,
+                    y: spark.y - Phaser.Math.Between(25, 45),
+                    alpha: 0,
+                    scaleX: 0.2,
+                    scaleY: 0.2,
+                    duration: 320,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => spark.destroy()
+                });
+            },
+            loop: true
+        });
+    }
+
+    /**
+     * Disattiva l'Aura Overdrive del Player.
+     */
+    disattivaOverdrivePlayer() {
+        this._playerOverdriveActive = false;
+        if (this.playerOverdriveTimer) {
+            this.playerOverdriveTimer.remove();
+            this.playerOverdriveTimer = null;
+        }
+        if (this.player && this.hpPlayer > 0) {
+            this.player.clearTint();
+        }
+    }
+
+    /**
+     * Attiva l'Aura Overdrive sull'avversario/NPC.
+     */
+    attivaOverdriveEnemy() {
+        if (this._enemyOverdriveActive || !this.NPC) return;
+        this._enemyOverdriveActive = true;
+
+        if (this.enemyOverdriveTimer) {
+            this.enemyOverdriveTimer.remove();
+        }
+
+        this.enemyOverdriveTimer = this.time.addEvent({
+            delay: 75,
+            callback: () => {
+                if (!this.NPC || !this.NPC.visible || this.hpEnemy <= 0 || !this._enemyOverdriveActive) return;
+
+                const sparkX = this.NPC.x + Phaser.Math.Between(-18, 18);
+                const sparkY = this.NPC.y + Phaser.Math.Between(-20, 25);
+                const spark = this.add.rectangle(sparkX, sparkY, Phaser.Math.Between(4, 8), Phaser.Math.Between(8, 16), 0xff0055, 0.85)
+                    .setDepth(this.NPC.depth - 1)
+                    .setBlendMode(Phaser.BlendModes.ADD);
+
+                this.tweens.add({
+                    targets: spark,
+                    y: spark.y - Phaser.Math.Between(25, 45),
+                    alpha: 0,
+                    scaleX: 0.2,
+                    scaleY: 0.2,
+                    duration: 320,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => spark.destroy()
+                });
+            },
+            loop: true
+        });
+    }
+
+    disattivaOverdriveEnemy() {
+        this._enemyOverdriveActive = false;
+        if (this.enemyOverdriveTimer) {
+            this.enemyOverdriveTimer.remove();
+            this.enemyOverdriveTimer = null;
+        }
+        if (this.NPC && this.hpEnemy > 0) {
+            this.NPC.clearTint();
+        }
+    }
+
     riceviDannoNPC(danno, isSuper = false, direzioneKnockback = null, ignoreImmunity = false) {
         if (this.hpEnemy <= 0) return;
         if (!ignoreImmunity && this.NPC && this.NPC._immune) return;
@@ -613,9 +1007,27 @@ export default class ArenaScene extends Phaser.Scene {
             this.hpEnemy = 0;
         }
 
+        // Calcola coordinate d'impatto per hitsparks
+        const hitX = this.NPC ? this.NPC.x : (this.player ? this.player.x : 400);
+        const hitY = this.NPC ? this.NPC.y - 20 : 300;
+
+        // Hitstop (micro-freeze per dare peso e impatto visivo al colpo)
+        const hitstopDuration = isSuper ? 130 : (danno > 15 ? 80 : 50);
+        this.applicaHitstop(hitstopDuration);
+
+        // Hitsparks al neon & scintille cyberpunk
+        this.creaHitsparks(hitX, hitY, isSuper, danno > 15 ? 2 : 1);
+
+        // Suono di impatto colpo (super impatto o impatto normale)
+        if (isSuper) {
+            this.sound.play("super_impact", { volume: 0.65 });
+        } else {
+            this.sound.play("hit_impact", { volume: 0.4 });
+        }
+
         // Knockback (sbalzo di lato) e stordimento se è una super
         if (isSuper && this.NPC && this.player) {
-            this.npcAttackCounter = 32; // Stordimento esteso per coprire lo shake e lo sbalzo (~530ms)
+            this.npcAttackCounter = 530; // Stordimento esteso per coprire lo shake e lo sbalzo (~530ms)
 
             // Determina la direzione in base al lato della texture dell'attaccante al momento del colpo
             const dir = direzioneKnockback !== null ? direzioneKnockback : (this.player.flipX ? -1 : 1);
@@ -644,6 +1056,10 @@ export default class ArenaScene extends Phaser.Scene {
             if (this.superAttackCharge > this.maxSuperAttackCharge) {
                 this.superAttackCharge = this.maxSuperAttackCharge;
             }
+            if (this.superAttackCharge >= this.maxSuperAttackCharge && !this._superChargedSoundPlayed) {
+                this._superChargedSoundPlayed = true;
+                this.sound.play("super_charge", { volume: 0.45 });
+            }
             this.aggiornaBarraSuper();
         }
 
@@ -666,6 +1082,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
 
         if (this.hpEnemy === 0) {
+            this.eseguiKODrammatico(true);
             this.gestisciMorteNPC();
         }
     }
@@ -673,6 +1090,14 @@ export default class ArenaScene extends Phaser.Scene {
     gestisciMorteNPC() {
         if (this.matchEnded) return;
         this.matchEnded = true;
+
+        this.disattivaOverdrivePlayer();
+        this.disattivaOverdriveEnemy();
+
+        // Ferma la musica di battaglia e suona la fanfara di vittoria
+        this.sound.stopByKey("bgm_battle");
+        this.sound.play("victory_jingle", { volume: 0.5 });
+        this.sound.play("voice_you_win", { volume: 0.8 });
 
         // Attiva l'effetto slow-motion per 3 secondi alla fine del match
         if (this.fxSystem) {
@@ -754,7 +1179,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    npcBehaviorOffline() {
+    npcBehaviorOffline(delta = 16.66) {
         if (!this.NPC || !this.player || this.hpEnemy <= 0 || this.hpPlayer <= 0) return;
 
         // Se il movimento è bloccato (es: durante il countdown), il bot sta fermo
@@ -764,9 +1189,9 @@ export default class ArenaScene extends Phaser.Scene {
             return;
         }
 
-        // Decrementa i contatori
+        // Decrementa i contatori in base al delta-time
         if (this.npcAttackCounter > 0) {
-            this.npcAttackCounter--;
+            this.npcAttackCounter -= delta;
             // Ferma il movimento orizzontale solo se il bot sta effettivamente attaccando
             if (this.npcState === "attacking1" || this.npcState === "attacking2" || this.npcState === "superAttacking") {
                 this.NPC.setVelocityX(0);
@@ -775,7 +1200,7 @@ export default class ArenaScene extends Phaser.Scene {
         }
 
         if (this.npcCooldownCounter > 0) {
-            this.npcCooldownCounter--;
+            this.npcCooldownCounter -= delta;
         }
 
         const speed = 130; // Velocità NPC
@@ -847,18 +1272,18 @@ export default class ArenaScene extends Phaser.Scene {
                 this.npcState = "standing";
             }
 
-            // Attacco con cooldown
-            if (isGrounded && this.npcCooldownCounter === 0 && Phaser.Math.Between(0, 100) < 8) {
+            // Attacco con cooldown calcolato in millisecondi
+            if (isGrounded && this.npcCooldownCounter <= 0 && Phaser.Math.Between(0, 100) < 8) {
                 const randomAttacco = Phaser.Math.Between(1, 2);
                 if (randomAttacco === 1) {
                     this.npcState = "attacking1";
-                    this.npcAttackCounter = 30; // Si blocca movimento per 30 frame
-                    this.npcCooldownCounter = 40; // Cooldown di 40 frame per mossa 1
+                    this.npcAttackCounter = 500; // Si blocca movimento per 500ms
+                    this.npcCooldownCounter = 650; // Cooldown di ~650ms per mossa 1
                     this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa1, 1);
                 } else {
                     this.npcState = "attacking2";
-                    this.npcAttackCounter = 30;
-                    this.npcCooldownCounter = 80; // Cooldown di 80 frame per mossa 2
+                    this.npcAttackCounter = 500;
+                    this.npcCooldownCounter = 1300; // Cooldown di ~1300ms per mossa 2
                     this.creaHitboxAttaccoNPC(this.personaggioPlayer.dati.danniMossa2, 2);
                 }
             }
@@ -883,13 +1308,17 @@ export default class ArenaScene extends Phaser.Scene {
         let offsetDirezione = this.NPC.flipX ? -55 : 55;
 
         if (tipoMossa === 2) {
+            this.sound.play("heavy_punch", { volume: 0.55 });
             larghezza = 36;
             altezza = 30;
             offsetDirezione = this.NPC.flipX ? -35 : 35;
         } else if (tipoMossa === "super") {
+            this.sound.play("super_laser", { volume: 0.7 });
             larghezza = 60;
             altezza = 45;
             offsetDirezione = this.NPC.flipX ? -45 : 45;
+        } else {
+            this.sound.play("light_punch", { volume: 0.45 });
         }
 
         const hitboxX = this.NPC.x + offsetDirezione;
@@ -922,6 +1351,24 @@ export default class ArenaScene extends Phaser.Scene {
         this.hpPlayer -= danno;
         if (this.hpPlayer < 0) {
             this.hpPlayer = 0;
+        }
+
+        // Calcola coordinate d'impatto per hitsparks sul player
+        const hitX = this.player ? this.player.x : (this.NPC ? this.NPC.x : 400);
+        const hitY = this.player ? this.player.y - 20 : 300;
+
+        // Hitstop (micro-freeze per dare peso e impatto visivo al colpo subito)
+        const hitstopDuration = isSuper ? 130 : (danno > 15 ? 80 : 50);
+        this.applicaHitstop(hitstopDuration);
+
+        // Hitsparks al neon & scintille cyberpunk
+        this.creaHitsparks(hitX, hitY, isSuper, danno > 15 ? 2 : 1);
+
+        // Suono di impatto colpo subito (super impatto o impatto normale)
+        if (isSuper) {
+            this.sound.play("super_impact", { volume: 0.65 });
+        } else {
+            this.sound.play("hit_impact", { volume: 0.4 });
         }
 
         // Knockback (sbalzo di lato) e stordimento se è una super
@@ -974,6 +1421,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
 
         if (this.hpPlayer === 0) {
+            this.eseguiKODrammatico(false);
             this.gestisciMortePlayer();
         }
     }
@@ -981,6 +1429,14 @@ export default class ArenaScene extends Phaser.Scene {
     gestisciMortePlayer() {
         if (this.matchEnded) return;
         this.matchEnded = true;
+
+        this.disattivaOverdrivePlayer();
+        this.disattivaOverdriveEnemy();
+
+        // Ferma la musica di battaglia e suona la fanfara di sconfitta
+        this.sound.stopByKey("bgm_battle");
+        this.sound.play("defeat_jingle", { volume: 0.5 });
+        this.sound.play("voice_game_over", { volume: 0.8 });
 
         // Attiva l'effetto slow-motion per 3 secondi alla fine del match
         if (this.fxSystem) {
@@ -1062,12 +1518,12 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    animazioniNPC(npcState) {
+    animazioniNPC(npcState, delta = 16.66) {
         if (!this.NPC || this.NPC._exploded) return;
 
         if (this.npcAttackCounter > 0) {
             if (this.modalita === "online") {
-                this.npcAttackCounter--;
+                this.npcAttackCounter -= delta;
             }
             if (this.playerBodyW && this.playerBodyH) {
                 const targetW = this.playerBodyW / this.NPC.scaleX;
@@ -1313,8 +1769,9 @@ export default class ArenaScene extends Phaser.Scene {
             const lunghezzaHpPx = 450 * 0.7 - 10;
             this.barraSuperPlayer.setSize(lunghezzaHpPx * percentuale, this.barraSuperPlayer.height);
 
-            // Effetto lampeggio (glow) se carica al 100%
+            // Effetto Aura Overdrive e lampeggio barra se carica al 100%
             if (this.superAttackCharge >= this.maxSuperAttackCharge) {
+                this.attivaOverdrivePlayer();
                 if (!this.superGlowTween) {
                     this.superGlowTween = this.tweens.add({
                         targets: this.barraSuperPlayer,
@@ -1325,6 +1782,7 @@ export default class ArenaScene extends Phaser.Scene {
                     });
                 }
             } else {
+                this.disattivaOverdrivePlayer();
                 if (this.superGlowTween) {
                     this.superGlowTween.stop();
                     this.superGlowTween = null;
@@ -1340,8 +1798,9 @@ export default class ArenaScene extends Phaser.Scene {
             const lunghezzaHpPx = 450 * 0.7 - 10;
             this.barraSuperEnemy.setSize(lunghezzaHpPx * percentuale, this.barraSuperEnemy.height);
 
-            // Effetto lampeggio (glow) se carica al 100%
+            // Effetto Aura Overdrive e lampeggio barra se carica al 100%
             if (this.enemySuperAttackCharge >= this.maxSuperAttackCharge) {
+                this.attivaOverdriveEnemy();
                 if (!this.superEnemyGlowTween) {
                     this.superEnemyGlowTween = this.tweens.add({
                         targets: this.barraSuperEnemy,
@@ -1352,6 +1811,7 @@ export default class ArenaScene extends Phaser.Scene {
                     });
                 }
             } else {
+                this.disattivaOverdriveEnemy();
                 if (this.superEnemyGlowTween) {
                     this.superEnemyGlowTween.stop();
                     this.superEnemyGlowTween = null;
@@ -1361,11 +1821,11 @@ export default class ArenaScene extends Phaser.Scene {
         }
     }
 
-    animazioniPlayer(playerState) {
+    animazioniPlayer(playerState, delta = 16.66) {
         if (!this.player || this.player._exploded) return;
 
         if (this.animationCounter > 0) {
-            this.animationCounter--;
+            this.animationCounter -= delta;
             if (this.playerBodyW && this.playerBodyH) {
                 const targetW = this.playerBodyW / this.player.scaleX;
                 const targetH = this.playerBodyH / this.player.scaleY;
@@ -1377,7 +1837,7 @@ export default class ArenaScene extends Phaser.Scene {
             return;
         }
 
-        const delayAnimation = 30; // 30 frames = circa 0.5 secondi a 60fps
+        const delayAnimation = 500; // 500 millisecondi
         let animation = `${this.personaggioPlayer.dati.nome}standing`;
         let targetScale = 1;
 
@@ -1616,8 +2076,10 @@ export default class ArenaScene extends Phaser.Scene {
 
             this.socket.on("opponentUpdate", (data) => {
                 if (this.NPC) {
-                    this.NPC.setPosition(data.x, data.y);
-                    this.NPC.setVelocity(data.vx, data.vy);
+                    this.targetOpponentX = data.x;
+                    this.targetOpponentY = data.y;
+                    this.targetOpponentVx = data.vx;
+                    this.targetOpponentVy = data.vy;
                     this.NPC.setFlipX(data.flipX);
 
                     this.npcState = data.state;
@@ -1634,11 +2096,12 @@ export default class ArenaScene extends Phaser.Scene {
                     this.npcState = data.attackType;
 
                     if (data.attackType === "attacking1" || data.attackType === "attacking2") {
-                        this.npcAttackCounter = 30;
+                        this.npcAttackCounter = 500; // 500ms
                     } else if (data.attackType === "superAttacking") {
-                        this.npcAttackCounter = 60;
+                        this.npcAttackCounter = 1000; // 1000ms
                         // Reset carica super per avversario online quando la usa
                         this.enemySuperAttackCharge = 0;
+                        this.disattivaOverdriveEnemy();
                         this.aggiornaBarraSuperEnemy();
                     }
                 }
@@ -1665,6 +2128,7 @@ export default class ArenaScene extends Phaser.Scene {
         };
 
         const testoConto = this.add.text(400, 250, "3", stileConto).setOrigin(0.5).setDepth(20);
+        this.sound.play("voice_3", { volume: 0.75 });
 
         let countdown = 3;
         const timer = this.time.addEvent({
@@ -1673,12 +2137,15 @@ export default class ArenaScene extends Phaser.Scene {
                 countdown--;
                 if (countdown === 2) {
                     testoConto.setText("2");
+                    this.sound.play("voice_2", { volume: 0.75 });
                 } else if (countdown === 1) {
                     testoConto.setText("1");
+                    this.sound.play("voice_1", { volume: 0.75 });
                 } else if (countdown === 0) {
                     testoConto.setText("FIGHT!");
                     testoConto.setColor("#00ff00");
                     testoConto.setFontSize(72);
+                    this.sound.play("voice_go", { volume: 0.85 });
                     this.playerCanMove = true;
                 } else {
                     testoConto.destroy();
@@ -1689,7 +2156,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    playerMovesOnline() {
+    playerMovesOnline(delta = 16.66) {
         if (!this.playerCanMove || !this.player) return;
 
         const playerMoves = {
@@ -1732,10 +2199,17 @@ export default class ArenaScene extends Phaser.Scene {
             this.jumpsLeft = 2;
         }
 
+        // Effetto sonoro all'atterraggio
+        if (isGrounded && !this.wasGrounded) {
+            this.sound.play("land", { volume: 0.25 });
+        }
+        this.wasGrounded = isGrounded;
+
         if (this.isUpJustPressed() && this.jumpsLeft > 0) {
             const jumpForce = this.jumpsLeft === 2 ? -400 : -320;
             this.player.setVelocityY(jumpForce);
             this.jumpsLeft--;
+            this.sound.play("jump", { volume: 0.35 });
         }
 
         if (!isGrounded && !(this.animationCounter > 0)) {
@@ -1746,10 +2220,10 @@ export default class ArenaScene extends Phaser.Scene {
             }
         }
 
-        this.playerAttacksOnline();
+        this.playerAttacksOnline(delta);
     }
 
-    playerAttacksOnline() {
+    playerAttacksOnline(delta = 16.66) {
         const playerAttacks = {
             attack1: "attacking1",
             attack2: "attacking2",
@@ -1758,8 +2232,9 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (this.isAttack1JustPressed() && this.playerCanAttack && this.cooldownMossa1 <= 0 && !(this.animationCounter > 0)) {
             this.player.setTexture(this.personaggioPlayer.dati.nome);
-            this.cooldownMossa1 = 40; // Cooldown più breve per mossa 1
+            this.cooldownMossa1 = 650; // ~650ms
             this.playerState = playerAttacks.attack1;
+            this.sound.play("light_punch", { volume: 0.45 });
             this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa1, 1);
 
             if (this.socket) {
@@ -1769,8 +2244,9 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (this.isAttack2JustPressed() && this.playerCanAttack && this.cooldownMossa2 <= 0 && !(this.animationCounter > 0)) {
             this.player.setTexture(this.personaggioPlayer.dati.nome);
-            this.cooldownMossa2 = 80; // Cooldown più lungo per mossa 2
+            this.cooldownMossa2 = 1300; // ~1300ms
             this.playerState = playerAttacks.attack2;
+            this.sound.play("heavy_punch", { volume: 0.55 });
             this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniMossa2, 2);
 
             if (this.socket) {
@@ -1781,11 +2257,14 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.isSuperAttackJustPressed() && this.playerCanAttack && this.cooldownSuper <= 0 && !(this.animationCounter > 0)) {
             if (this.superAttackCharge >= this.maxSuperAttackCharge) {
                 this.superAttackCharge = 0;
+                this._superChargedSoundPlayed = false;
+                this.disattivaOverdrivePlayer();
                 this.aggiornaBarraSuper();
 
                 this.player.setTexture(this.personaggioPlayer.dati.nome);
-                this.cooldownSuper = 60;
+                this.cooldownSuper = 1000;
                 this.playerState = playerAttacks.superAttack;
+                this.sound.play("super_laser", { volume: 0.7 });
                 this.creaHitboxAttaccoOnline(this.personaggioPlayer.dati.danniSuperAttakc, "super");
 
                 if (this.socket) {
@@ -1796,10 +2275,10 @@ export default class ArenaScene extends Phaser.Scene {
             }
         }
 
-        // Decremento indipendente dei cooldown per ogni mossa
-        if (this.cooldownMossa1 > 0) this.cooldownMossa1--;
-        if (this.cooldownMossa2 > 0) this.cooldownMossa2--;
-        if (this.cooldownSuper > 0) this.cooldownSuper--;
+        // Decremento framerate-independent dei cooldown per ogni mossa
+        if (this.cooldownMossa1 > 0) this.cooldownMossa1 -= delta;
+        if (this.cooldownMossa2 > 0) this.cooldownMossa2 -= delta;
+        if (this.cooldownSuper > 0) this.cooldownSuper -= delta;
     }
 
     creaHitboxAttaccoOnline(danno, tipoMossa = 1) {
@@ -1855,6 +2334,13 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.matchEnded) return;
         this.matchEnded = true;
 
+        this.disattivaOverdrivePlayer();
+        this.disattivaOverdriveEnemy();
+
+        this.sound.stopByKey("bgm_battle");
+        this.sound.play("victory_jingle", { volume: 0.5 });
+        this.sound.play("voice_you_win", { volume: 0.8 });
+
         if (this.socket) {
             this.socket.emit("registraMatchOnline", { vinta: true });
         }
@@ -1887,6 +2373,7 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     rimuoviSocketListeners() {
+        this.sound.stopByKey("bgm_battle");
         if (this.socket) {
             this.socket.off("startArenaCountdown");
             this.socket.off("opponentUpdate");

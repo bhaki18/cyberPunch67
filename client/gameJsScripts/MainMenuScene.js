@@ -78,6 +78,22 @@ export default class MainMenuScene extends Phaser.Scene {
         this.bgScrollX = (data && data.bgScrollX) ? data.bgScrollX : 0;
     }
 
+    avviaMusicaMenu() {
+        // Se c'è già una traccia bgm_menu in riproduzione attiva, non fare nulla (evita duplicati ed eco)
+        if (this.sound.sounds && this.sound.sounds.some(s => s.key === "bgm_menu" && s.isPlaying)) {
+            return;
+        }
+
+        // Se non è in riproduzione, rimuovi eventuali vecchie istanze ferme e avvia una nuova traccia pulita
+        this.sound.stopByKey("bgm_menu");
+        if (this.sound.sounds) {
+            const vecchie = this.sound.sounds.filter(s => s.key === "bgm_menu");
+            vecchie.forEach(s => this.sound.remove(s));
+        }
+
+        this.sound.play("bgm_menu", { loop: true, volume: 0.35 });
+    }
+
     /**
      * Inizializzazione della scena. Crea la mappa, configura gli sfondi mobili,
      * istanzia i bottoni con i loro eventi interattivi e avvia le timeline.
@@ -87,6 +103,9 @@ export default class MainMenuScene extends Phaser.Scene {
         // carica i personaggi totali
         this.personaggiTot = caricaPersonaggiTot();
         this.livelloPlayer = (window.player && window.player.level !== undefined) ? window.player.level : 1;
+
+        // Avvia la musica di sottofondo del menu principale in sicurezza
+        this.avviaMusicaMenu();
 
         // --- AUTO-LOGIN SE IL TOKEN ESISTE E IL GIOCATORE ERA LOGGATO
         const token = localStorage.getItem("token");
@@ -181,6 +200,7 @@ export default class MainMenuScene extends Phaser.Scene {
 
         // --- LISTENER DI RISVEGLIO (wake): aggiorna i dati player senza ricreare la scena
         this.events.on("wake", () => {
+            this.avviaMusicaMenu();
             if (window.player.username && this.nomeUtenteBarraGiocatore) {
                 const displayLevel = window.player.level !== undefined ? window.player.level : 1;
                 this.livelloPlayer = displayLevel;
@@ -287,6 +307,7 @@ export default class MainMenuScene extends Phaser.Scene {
 
         // Effetti grafici per l'hover sul pulsante online
         this.bottonePlayOnline.on("pointerover", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
             this.tweens.add({
                 targets: this.bottonePlayOnline,
                 scale: 2.25,
@@ -315,6 +336,7 @@ export default class MainMenuScene extends Phaser.Scene {
 
         // Effetto grafico alla pressione (click down)
         this.bottonePlayOnline.on("pointerdown", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.bottonePlayOnline.setFrame(2);
             this.tweens.add({
                 targets: this.bottonePlayOnline,
@@ -341,6 +363,7 @@ export default class MainMenuScene extends Phaser.Scene {
             .setDepth(2);
 
         this.bottonePlayOffline.on("pointerover", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
             this.tweens.add({
                 targets: this.bottonePlayOffline,
                 scale: 2.25,
@@ -367,6 +390,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
 
         this.bottonePlayOffline.on("pointerdown", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.bottonePlayOffline.setFrame(2);
             this.tweens.add({
                 targets: this.bottonePlayOffline,
@@ -390,6 +414,7 @@ export default class MainMenuScene extends Phaser.Scene {
             .setDepth(2);
 
         this.bottoneInventory.on("pointerover", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
             this.tweens.add({
                 targets: this.bottoneInventory,
                 scale: 2.25,
@@ -416,6 +441,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
 
         this.bottoneInventory.on("pointerdown", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.bottoneInventory.setFrame(2);
             this.tweens.add({
                 targets: this.bottoneInventory,
@@ -439,6 +465,7 @@ export default class MainMenuScene extends Phaser.Scene {
             .setDepth(2);
 
         this.bottoneInfo.on("pointerover", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
             this.tweens.add({
                 targets: this.bottoneInfo,
                 scale: 2.25,
@@ -465,6 +492,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
 
         this.bottoneInfo.on("pointerdown", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.bottoneInfo.setFrame(2);
             this.tweens.add({
                 targets: this.bottoneInfo,
@@ -488,6 +516,7 @@ export default class MainMenuScene extends Phaser.Scene {
             .setAlpha(0);
 
         this.bottoneLeaderboard.on("pointerover", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
             this.tweens.add({
                 targets: this.bottoneLeaderboard,
                 scale: 1.15,
@@ -507,6 +536,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
 
         this.bottoneLeaderboard.on("pointerdown", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.bottoneLeaderboard.setFrame(2);
         });
 
@@ -548,6 +578,7 @@ export default class MainMenuScene extends Phaser.Scene {
             .setAlpha(0);
 
         this.logInBtn.on("pointerover", () => {
+            this.sound.play("btn_hover", { volume: 0.25 });
             this.tweens.add({
                 targets: this.logInBtn,
                 scale: 1.25,
@@ -567,6 +598,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
 
         this.logInBtn.on("pointerdown", () => {
+            this.sound.play("btn_click", { volume: 0.45 });
             this.logInBtn.setFrame(2);
         });
 
@@ -764,6 +796,7 @@ export default class MainMenuScene extends Phaser.Scene {
                 if (btn.x === 2760) {
                     // Impatto: piccolo scuotimento di camera e passa al bottone successivo
                     this.cameras.main.shake(200, 0.008);
+                    this.sound.play("btn_whoosh", { volume: 0.3 });
                     this.bottoneAttuale++;
                 }
             }
@@ -848,6 +881,7 @@ export default class MainMenuScene extends Phaser.Scene {
                 this.dominantRed.setTexture("dominantRedLanding");
                 this.dominantRedShadow.setTexture("dominantRedLanding");
                 this.cameras.main.shake(400, 0.008);
+                this.sound.play("land", { volume: 0.35 });
 
                 setTimeout(() => {
                     this.dominantRed.setTexture("dominantRedStanding");
