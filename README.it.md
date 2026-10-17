@@ -107,6 +107,12 @@ Al momento del colpo decisivo che decreta la vittoria nell'Arena, il gioco appli
 ### ⚡ Aura Energetica Overdrive
 Quando la carica per il Super Attacco raggiunge il 100%, il lottatore viene avvolto da un'aura pulsante al neon che segnala la letalità imminente all'avversario.
 
+### 🔢 Numeri di Danno Fluttuanti Cyberpunk
+Ogni colpo andato a segno genera numeri di danno fluttuanti al neon con font Orbitron, bordi a contrasto, pop-in elastico all'impatto, jitter orizzontale anti-sovrapposizione e indicatori elettrici per i colpi critici (`⚡ -150 ⚡`).
+
+### 🔄 Sistema di Rivincita Immediata (Rematch)
+La schermata dei risultati di fine incontro include il pulsante dedicato **RIGIOCA // REMATCH** che consente di riavviare istantaneamente la sfida in modalità offline senza passare dai menu, o di rientrare rapidamente nella lobby online.
+
 ### 🚀 Indipendenza dal Framerate
 La fisica e le velocità di movimento sono normalizzate rispetto al delta-time (`dt`), garantendo salti, attacchi e velocità identiche su schermi a 60Hz, 120Hz, 144Hz e 240Hz.
 

@@ -12,14 +12,14 @@ export default class DamageNumberFx {
     }
 
     /**
-     * Fa apparire un testo fluttuante temporaneo con la cifra del danno.
+     * Fa apparire un testo fluttuante temporaneo con la cifra del danno in stile Cyberpunk Neon.
      * @param {number} number - Numero di danno da far apparire.
      * @param {number} size - Dimensione del testo in pixel.
      * @param {string} color - Colore del testo in esadecimale (senza '#' iniziale).
      * @returns {void}
      * 
      * @example
-     * damageNumberFx.DamageNumberFx(100, 32, "ff0000");
+     * damageNumberFx.DamageNumberFx(100, 32, "ff0055");
      */
     DamageNumberFx(number, size, color) {
         const target = this.target;
@@ -34,43 +34,93 @@ export default class DamageNumberFx {
             return;
         }
 
-        const danno = (number) ? number : 1;
-        const grandezza = (size) ? size : 24;
-        const colore = (color) ? `#${color}` : "#cc1515ff";
+        const danno = (number !== undefined && number !== null) ? Number(number) : 1;
+        const grandezza = size ? size : (danno >= 90 ? 36 : (danno >= 30 ? 28 : 22));
 
-        // Ricava i limiti geometrici dell'oggetto per posizionare il testo perfettamente in alto al centro
+        // Rilevamento intensità colpo per palette Cyberpunk
+        const isCritical = danno >= 90;
+        const isHeavy = danno >= 30 && !isCritical;
+
+        let formattedText = `-${danno}`;
+        let mainColor = "#00f0ff"; // Neon Cyan predefinito
+        let glowColor = "#00ffff";
+        let strokeColor = "#000000";
+
+        if (color) {
+            mainColor = color.startsWith("#") ? color : `#${color}`;
+            glowColor = mainColor;
+        } else if (isCritical) {
+            formattedText = `⚡ -${danno} ⚡`;
+            mainColor = "#ff0055"; // Hot Cyber Pink
+            glowColor = "#00f0ff"; // Contrasto neon bicromatico
+        } else if (isHeavy) {
+            formattedText = `-${danno}`;
+            mainColor = "#ffe600"; // Giallo ambrato elettrico
+            glowColor = "#ff3300";
+        }
+
+        // Calcola coordinate con jitter orizzontale casuale per evitare la sovrapposizione di colpi multipli
         const bounds = target.getBounds();
+        const offsetX = Phaser.Math.Between(-24, 24);
+        const startX = bounds.centerX + offsetX;
+        const startY = bounds.top - 10;
 
-        // Crea l'oggetto Text nella scena
+        // Crea il testo stilizzato in stile HUD cyberpunk
         const testo = scene.add.text(
-            bounds.centerX,
-            bounds.top,
-            `${danno}`,
+            startX,
+            startY,
+            formattedText,
             {
-                fontFamily: "Orbitron",
+                fontFamily: "'Orbitron', 'Share Tech Mono', monospace",
                 fontSize: `${grandezza}px`,
                 fontStyle: "bold",
-                color: colore
+                color: mainColor,
+                stroke: strokeColor,
+                strokeThickness: Math.max(3, Math.round(grandezza * 0.16))
             }
-        ).setOrigin(0.5, 1);
+        )
+        .setOrigin(0.5, 1)
+        .setDepth(10000)
+        .setScale(0.5)
+        .setAlpha(0.95);
 
-        // Tween per animare il testo (movimento diagonale verso l'alto, rotazione e dissolvenza)
-        target._damageNumber = scene.tweens.add({
+        // Glow neon Cyberpunk
+        testo.setShadow(0, 0, glowColor, isCritical ? 16 : 8, true, true);
+
+        // Angolo dinamico cyberpunk inclinato all'impatto
+        const targetAngle = Phaser.Math.Between(-12, 12);
+        testo.setAngle(targetAngle * 0.5);
+
+        // Pop elastico iniziale ad alto impatto (da 0.5 a 1.35x poi si stabilizza)
+        scene.tweens.add({
             targets: testo,
-            duration: 1000,
-            x: testo.x + grandezza * 5,
-            y: testo.y - grandezza * 5,
-            alpha: 0,
-            angle: testo.angle + 20,
+            scale: isCritical ? 1.4 : 1.18,
+            duration: 110,
+            ease: "Back.easeOut",
             onComplete: () => {
-                // Distrugge l'oggetto Text per liberare memoria
+                scene.tweens.add({
+                    targets: testo,
+                    scale: 1.0,
+                    duration: 160,
+                    ease: "Quad.easeOut"
+                });
+            }
+        });
+
+        // Movimento verso l'alto e dissolvenza fluida
+        const floatDistanceY = 48 + grandezza * 0.7;
+        const driftX = (offsetX >= 0 ? 1 : -1) * Phaser.Math.Between(8, 20);
+
+        scene.tweens.add({
+            targets: testo,
+            x: startX + driftX,
+            y: startY - floatDistanceY,
+            alpha: { from: 1, to: 0 },
+            angle: targetAngle,
+            duration: isCritical ? 1100 : 850,
+            ease: "Cubic.easeOut",
+            onComplete: () => {
                 testo.destroy();
-                target._damageNumber = null;
-            },
-            onStop: () => {
-                // Distrugge l'oggetto Text per liberare memoria in caso di interruzione
-                testo.destroy();
-                target._damageNumber = null;
             }
         });
     }

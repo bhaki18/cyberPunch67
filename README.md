@@ -107,6 +107,12 @@ When a match-ending blow is landed in the Arena, the engine activates a dramatic
 ### ⚡ Overdrive Energy Aura
 When a combatant's Super Attack is fully charged, an energized neon aura envelops the character sprite, signalling maximum lethality to opponents.
 
+### 🔢 Cyberpunk Floating Damage Numbers
+Every strike generates dynamic, neon-styled floating damage numbers in Orbitron typography with high-contrast outlines, elastic pop-in animations, random impact jitter, and electric lightning indicators on critical hits (`⚡ -150 ⚡`).
+
+### 🔄 Instant Rematch System
+The post-match results screen features an instant **RIGIOCA // REMATCH** button allowing players to immediately restart offline battles without reloading menus, or quickly re-enter the online lobby.
+
 ### 🚀 Framerate Independence & Physics Timestep
 Combat logic and physics updates are normalized using delta-time scaling (`dt`), ensuring identical jump heights, attack speeds, and movement velocity on 60Hz, 120Hz, 144Hz, and 240Hz monitors.
 

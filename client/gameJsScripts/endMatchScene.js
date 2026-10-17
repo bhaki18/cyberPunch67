@@ -172,7 +172,8 @@ export default class endMatchScene extends Phaser.Scene {
             `;
         }
 
-        const buttonText = this.modalita === "online" ? "ACCETTA // ALL'HUB" : "ACCETTA // MENU";
+        const rematchButtonText = this.modalita === "online" ? "⚡ RIVINCITA // HUB" : "⚡ RIGIOCA // REMATCH";
+        const acceptButtonText = this.modalita === "online" ? "ESCI // MENU" : "MENU PRINCIPALE";
 
         this.overlay.innerHTML = `
             <h2 class="cyber-title" style="font-size: 20px; letter-spacing: 3px; border-bottom: 1px solid rgba(0, 240, 255, 0.2); padding-bottom: 10px; margin-bottom: 10px;">DATI INCONTRO</h2>
@@ -180,9 +181,14 @@ export default class endMatchScene extends Phaser.Scene {
             
             ${statsCardHtml}
 
-            <button class="cyber-submit-btn" id="end-match-accept-btn" style="width: 100%; height: 42px; font-size: 13px; letter-spacing: 2px; margin-top: auto;">
-                ${buttonText}
-            </button>
+            <div class="end-match-buttons-row" style="display: flex; gap: 10px; width: 100%; margin-top: auto;">
+                <button class="cyber-submit-btn" id="end-match-rematch-btn" style="flex: 1.15; height: 42px; font-size: 11px; letter-spacing: 1.5px; background: var(--cyber-cyan); color: #000; box-shadow: var(--cyber-glow-cyan); margin-top: 0;">
+                    ${rematchButtonText}
+                </button>
+                <button class="cyber-submit-btn" id="end-match-accept-btn" style="flex: 0.85; height: 42px; font-size: 11px; letter-spacing: 1.5px; background: rgba(255, 0, 85, 0.2); border: 1.5px solid var(--cyber-pink); color: #fff; box-shadow: 0 0 10px rgba(255,0,85,0.3); margin-top: 0;">
+                    ${acceptButtonText}
+                </button>
+            </div>
         `;
 
         document.body.appendChild(this.overlay);
@@ -215,8 +221,17 @@ export default class endMatchScene extends Phaser.Scene {
             const title = this.overlay.querySelector(".cyber-title");
             if (title) title.style.fontSize = `${20 * scaleY}px`;
 
-            const btn = this.overlay.querySelector("#end-match-accept-btn");
-            if (btn) btn.style.height = `${42 * scaleY}px`;
+            const rematchBtn = this.overlay.querySelector("#end-match-rematch-btn");
+            if (rematchBtn) {
+                rematchBtn.style.height = `${42 * scaleY}px`;
+                rematchBtn.style.fontSize = `${Math.max(9, 11 * scaleY)}px`;
+            }
+
+            const acceptBtn = this.overlay.querySelector("#end-match-accept-btn");
+            if (acceptBtn) {
+                acceptBtn.style.height = `${42 * scaleY}px`;
+                acceptBtn.style.fontSize = `${Math.max(9, 11 * scaleY)}px`;
+            }
         };
 
         posizionaOverlay();
@@ -236,7 +251,19 @@ export default class endMatchScene extends Phaser.Scene {
             }, 100);
         }
 
-        // Listener del bottone di accettazione/ritorno
+        // Listener del bottone di Rematch / Rigioca
+        const rematchBtn = this.overlay.querySelector("#end-match-rematch-btn");
+        if (rematchBtn) {
+            rematchBtn.addEventListener("mouseenter", () => {
+                this.sound.play("btn_hover", { volume: 0.25 });
+            });
+            rematchBtn.addEventListener("click", () => {
+                this.sound.play("btn_click", { volume: 0.45 });
+                this.riavviaPartita();
+            });
+        }
+
+        // Listener del bottone di uscita / ritorno
         const acceptBtn = this.overlay.querySelector("#end-match-accept-btn");
         acceptBtn.addEventListener("mouseenter", () => {
             this.sound.play("btn_hover", { volume: 0.25 });
@@ -262,6 +289,33 @@ export default class endMatchScene extends Phaser.Scene {
         if (this.spaceBg) {
             this.spaceBg.tilePositionX += 0.25;
         }
+    }
+
+    riavviaPartita() {
+        this.cameras.main.fadeOut(400, 0, 0, 0);
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+            this.shutdown();
+            this.scene.stop("endMatchScene");
+
+            if (this.modalita === "offline") {
+                // Riavvia istantaneamente l'Arena offline con lo stesso personaggio
+                this.scene.start("ArenaScene", {
+                    modalita: "offline",
+                    personaggioSelezionato: this.personaggioPlayer,
+                    nomePlayer: this.nomePlayer,
+                    livelloPlayer: this.statsAggiornate ? this.statsAggiornate.level : 1,
+                    personaggiTot: this.personaggiTot
+                });
+            } else {
+                // Modalità online: ritorna direttamente all'Hub online per un rematch rapido
+                this.scene.start("HubScene", {
+                    modalita: "online",
+                    nomePlayer: this.nomePlayer,
+                    livelloPlayer: this.statsAggiornate ? this.statsAggiornate.level : 1,
+                    personaggiTot: this.personaggiTot
+                });
+            }
+        });
     }
 
     ritorna(vaiAlLogin = false) {

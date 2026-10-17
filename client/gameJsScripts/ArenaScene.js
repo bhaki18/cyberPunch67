@@ -1041,10 +1041,10 @@ export default class ArenaScene extends Phaser.Scene {
             });
         }
 
-        // Effetto numero di danno fluttuante e vibrazione del personaggio
+        // Effetto numero di danno fluttuante Cyberpunk e vibrazione del personaggio
         if (this.NPC && this.NPC.fx) {
-            const size = isSuper ? 36 : 28;
-            const color = isSuper ? "ffaa00" : "ff3333";
+            const size = isSuper ? 38 : (danno >= 30 ? 28 : 22);
+            const color = isSuper ? "ff0055" : (danno >= 30 ? "ffe600" : "00f0ff");
             this.NPC.fx.DamageNumberFx(danno, size, color);
             this.NPC.fx.ShakeFx(200, isSuper ? 10 : 5);
             this.NPC.fx.ImmuneFx(1000);
@@ -1099,9 +1099,9 @@ export default class ArenaScene extends Phaser.Scene {
         this.sound.play("victory_jingle", { volume: 0.5 });
         this.sound.play("voice_you_win", { volume: 0.8 });
 
-        // Attiva l'effetto slow-motion per 3 secondi alla fine del match
+        // Attiva un breve effetto slow-motion cinematografico (800ms) sul colpo decisivo
         if (this.fxSystem) {
-            this.fxSystem.RallyFx(3000, 0.2);
+            this.fxSystem.RallyFx(800, 0.3);
         }
 
         if (this.socket) {
@@ -1148,32 +1148,9 @@ export default class ArenaScene extends Phaser.Scene {
             targets: testoVittoria,
             alpha: 1,
             scale: 1,
-            duration: 500,
+            duration: 350,
             ease: 'Back.easeOut',
             onComplete: () => {
-                this.time.delayedCall(500, () => {
-                    const stileSottoTesto = {
-                        fontFamily: 'Orbitron',
-                        fontSize: '18px',
-                        color: '#ffffff',
-                        stroke: '#000000',
-                        strokeThickness: 3
-                    };
-
-                    const sottoTesto = this.add.text(
-                        400,
-                        320,
-                        "Caricamento risultati...",
-                        stileSottoTesto
-                    ).setOrigin(0.5).setDepth(10).setAlpha(0);
-
-                    this.tweens.add({
-                        targets: sottoTesto,
-                        alpha: 1,
-                        duration: 300
-                    });
-                });
-
                 this.mostraSchermataRisultati(true);
             }
         });
@@ -1393,13 +1370,13 @@ export default class ArenaScene extends Phaser.Scene {
             });
         }
 
-        // Effetto numero di danno fluttuante e vibrazione del personaggio
+        // Effetto numero di danno fluttuante Cyberpunk e vibrazione del personaggio
         if (this.player && this.player.fx) {
-            const isSuper = danno > 25;
-            const size = isSuper ? 36 : 28;
-            const color = isSuper ? "ffaa00" : "ff3333";
+            const isSuperAttack = isSuper || danno >= 90;
+            const size = isSuperAttack ? 38 : (danno >= 30 ? 28 : 22);
+            const color = isSuperAttack ? "ff0055" : (danno >= 30 ? "ffe600" : "00f0ff");
             this.player.fx.DamageNumberFx(danno, size, color);
-            this.player.fx.ShakeFx(200, isSuper ? 10 : 5);
+            this.player.fx.ShakeFx(200, isSuperAttack ? 10 : 5);
             this.player.fx.ImmuneFx(1000);
         }
 
@@ -1438,9 +1415,9 @@ export default class ArenaScene extends Phaser.Scene {
         this.sound.play("defeat_jingle", { volume: 0.5 });
         this.sound.play("voice_game_over", { volume: 0.8 });
 
-        // Attiva l'effetto slow-motion per 3 secondi alla fine del match
+        // Attiva un breve effetto slow-motion cinematografico (800ms) sul colpo decisivo
         if (this.fxSystem) {
-            this.fxSystem.RallyFx(3000, 0.2);
+            this.fxSystem.RallyFx(800, 0.3);
         }
 
         if (this.socket) {
@@ -1487,32 +1464,9 @@ export default class ArenaScene extends Phaser.Scene {
             targets: testoSconfitta,
             alpha: 1,
             scale: 1,
-            duration: 500,
+            duration: 350,
             ease: 'Back.easeOut',
             onComplete: () => {
-                this.time.delayedCall(500, () => {
-                    const stileSottoTesto = {
-                        fontFamily: 'Orbitron',
-                        fontSize: '18px',
-                        color: '#ffffff',
-                        stroke: '#000000',
-                        strokeThickness: 3
-                    };
-
-                    const sottoTesto = this.add.text(
-                        400,
-                        320,
-                        "Caricamento risultati...",
-                        stileSottoTesto
-                    ).setOrigin(0.5).setDepth(10).setAlpha(0);
-
-                    this.tweens.add({
-                        targets: sottoTesto,
-                        alpha: 1,
-                        duration: 300
-                    });
-                });
-
                 this.mostraSchermataRisultati(false);
             }
         });
@@ -2385,15 +2339,21 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     mostraSchermataRisultati(vinta, disconnessione = false) {
-        const logged = localStorage.getItem("playerLogged") === "true";
+        // Ripristina immediatamente il timeScale della scena e dei tweens per non dilatare la transizione
+        if (this.fxSystem) {
+            this.fxSystem.NormalTimeFx(1);
+        }
+        this.time.timeScale = 1;
+        this.tweens.timeScale = 1;
 
+        const logged = localStorage.getItem("playerLogged") === "true";
         let timeoutAttivato = false;
 
         const avviaScenaRisultati = (stats) => {
             if (timeoutAttivato) return;
             timeoutAttivato = true;
 
-            this.cameras.main.fadeOut(500, 0, 0, 0);
+            this.cameras.main.fadeOut(350, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', () => {
                 this.rimuoviSocketListeners();
                 this.scene.start("endMatchScene", {
@@ -2409,23 +2369,25 @@ export default class ArenaScene extends Phaser.Scene {
         };
 
         if (logged && this.socket && this.socket.connected) {
-            // Registra listener temporaneo per ricevere le statistiche salvate
+            // Registra listener per ricevere le statistiche salvate dal server
             this.socket.once("statsAggiornate", (data) => {
-                this.time.delayedCall(1500, () => {
+                setTimeout(() => {
                     avviaScenaRisultati(data);
-                });
+                }, 400);
             });
 
-            // Timeout di sicurezza: procedi dopo 4.5 secondi anche in assenza di risposta
-            this.time.delayedCall(4500, () => {
-                console.warn("[ArenaScene] Attivato timeout di sicurezza per statsAggiornate.");
-                avviaScenaRisultati(null);
-            });
+            // Timeout di sicurezza reale: 2.5 secondi
+            setTimeout(() => {
+                if (!timeoutAttivato) {
+                    console.warn("[ArenaScene] Attivato timeout di sicurezza per statsAggiornate.");
+                    avviaScenaRisultati(null);
+                }
+            }, 2500);
         } else {
-            // Se ospite o non connesso, carica la schermata direttamente dopo 2.5 secondi
-            this.time.delayedCall(2500, () => {
+            // Se ospite o non connesso, carica la schermata direttamente dopo 500ms
+            setTimeout(() => {
                 avviaScenaRisultati(null);
-            });
+            }, 500);
         }
     }
 }
